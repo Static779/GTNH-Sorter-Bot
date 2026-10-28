@@ -45,8 +45,10 @@ public final class Assigner {
     /** Relative strength of the "related nearby" term against the "together" term. */
     static final double RELATED_WEIGHT = 0.5;
     private static final int MAX_PASSES = 30;
-    /** Hard cap on cost evaluations (keeps planning well under a second with ~100 chests); count-based so it stays
-     * deterministic. */
+    /**
+     * Hard cap on cost evaluations (keeps planning well under a second with ~100 chests); count-based so it stays
+     * deterministic.
+     */
     private static final int MAX_EVALS = 60000;
 
     public static final class Result {
@@ -188,14 +190,18 @@ public final class Assigner {
         int[] dem = new int[k];
         for (int j = 0; j < k; j++) dem[j] = active.get(cats.get(j));
         double[][] rel = new double[k][k];
-        for (int a = 0; a < k; a++) for (int b = 0; b < k; b++) if (a != b) rel[a][b] = Relations.score(cats.get(a), cats.get(b));
+        for (int a = 0; a < k; a++)
+            for (int b = 0; b < k; b++) if (a != b) rel[a][b] = Relations.score(cats.get(a), cats.get(b));
 
         // Categories without a chest (biggest first) take the unused chest that gives the lowest cost.
         Cost cost = new Cost(n, k, slots, dist, mismatch, dem, rel, w);
         int[] cur = start.clone();
         List<Integer> order = new ArrayList<>();
         for (int j = 0; j < k; j++) order.add(j);
-        order.sort((a, b) -> dem[b] != dem[a] ? dem[b] - dem[a] : cats.get(a).compareTo(cats.get(b)));
+        order.sort(
+            (a, b) -> dem[b] != dem[a] ? dem[b] - dem[a]
+                : cats.get(a)
+                    .compareTo(cats.get(b)));
         for (int j : order) {
             boolean has = false;
             for (int c = 0; c < n && !has; c++) has = cur[c] == j;

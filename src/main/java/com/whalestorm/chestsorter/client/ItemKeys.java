@@ -61,7 +61,11 @@ public final class ItemKeys {
         oreNames.put(key, names);
         infos.put(
             key,
-            new ItemInfo(key, label(stack), categorizer.categorize(names, modIdOf(stack), tabOf(stack)), stack.getMaxStackSize()));
+            new ItemInfo(
+                key,
+                label(stack),
+                categorizer.categorize(names, modIdOf(stack), tabOf(stack)),
+                stack.getMaxStackSize()));
         return key;
     }
 
