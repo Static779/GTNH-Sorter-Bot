@@ -53,3 +53,13 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 - [Certain] This session can push branches to the repo but not tags or branch deletions.
 - [Certain] 2026-10-27: stage 0 tested in game by you: mod loads, key prints SCAN / IDLE.
 - [Certain] 2026-10-27: stage 1 (container scanner) @ 7cb1a85 builds green incl. server run. Not yet run in game.
+
+## Full build (2026-10-27)
+- [Certain] LootGameSolver (KyroXova, MIT, 1.7.10 GTNH client mod) opens/clicks blocks with `playerController.onPlayerRightClick(player, world, held, x, y, z, 1, Vec3(top centre))` after `swingItem()`, and turns with at most 35° yaw / 25° pitch per tick. We use both. It moves by pushing velocity straight at the target (or flying); we follow an A* path with vanilla movement input instead.
+- [Certain] Forge 1.7.10 calls the held item's `onItemUseFirst` before a block's `onBlockActivated`, so a held tool can act on a chest. Runs switch to an empty hotbar slot.
+- [Certain] Iron Chest slots are `ValidatingSlot`s (`isItemValid` per tier); deposits check `isItemValid` per slot.
+- [Certain] Vanilla stores mouse keybinds as code − 100; the safety check reads raw keyboard/mouse state, so it still sees you while the mod drives movement input.
+- [Certain] etfuturum and freecam mixin `MovementInputFromOptions`; the run replaces the player's `movementInput` with its own subclass for the run and restores it after.
+- [Certain] Categories use GT5U's 308 `OrePrefixBuilder` names (bundled as `assets/chestsorter/gt-ore-prefixes.txt`).
+- Tests: `tools/test-core.sh` — 8235 checks, including 3000 random chest setups replayed by PlanChecker. A deliberately broken planner (whole-stack fit check removed) fails 930 checks, including item-loss detection.
+- [Guessing] Not verifiable here: real timing on servers (settleTicks 5 may be short on laggy servers), walking over unusual GTNH blocks, and chests that change while the run is going.
