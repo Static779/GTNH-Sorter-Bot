@@ -16,16 +16,18 @@ public class Config {
 
     // movement
     public static boolean walking = true;
+    public static boolean sprint = true;
     public static double reach = 4.0;
     public static int maxPathNodes = 20000;
     public static int stuckTicks = 40;
     public static int maxRepaths = 3;
 
     // safety / pacing
-    public static int clickDelayTicks = 3;
-    public static int settleTicks = 5;
+    public static int clickDelayTicks = 1;
+    public static int settleTicks = 4;
     public static int openTimeoutTicks = 60;
-    public static boolean verifyEveryTransfer = true;
+    public static boolean verifyEveryTransfer = false;
+    public static boolean finalRecheck = false;
     public static int hostileRadius = 8;
     public static double minHealthFraction = 0.5;
     public static int maxTrips = 300;
@@ -34,8 +36,26 @@ public class Config {
     public static boolean traceFile = true;
     public static boolean verboseChat = false;
 
+    /** Bump when defaults change in a way existing config files should pick up. */
+    private static final int CONFIG_VERSION = 2;
+
     public static void synchronizeConfiguration(File configFile) {
         Configuration c = new Configuration(configFile);
+
+        // Forge keeps whatever value a config file already has, so new defaults never reach existing files.
+        // Version 2 made runs faster: reset just those keys in older files; everything else is kept.
+        int version = c.get(Configuration.CATEGORY_GENERAL, "configVersion", 1)
+            .getInt();
+        if (version < 2) {
+            c.getCategory(CAT_SAFETY)
+                .remove("clickDelayTicks");
+            c.getCategory(CAT_SAFETY)
+                .remove("settleTicks");
+            c.getCategory(CAT_SAFETY)
+                .remove("verifyEveryTransfer");
+        }
+        c.get(Configuration.CATEGORY_GENERAL, "configVersion", CONFIG_VERSION)
+            .set(CONFIG_VERSION);
 
         scanRadius = c.getInt(
             "scanRadius",
@@ -50,27 +70,28 @@ public class Config {
             CAT_MOVE,
             walking,
             "Walk to chests out of reach. If false, only chests within reach of where you stand are used.");
+        sprint = c.getBoolean("sprint", CAT_MOVE, sprint, "Sprint on straight stretches when food allows.");
         reach = c.getFloat("reach", CAT_MOVE, (float) reach, 2.0f, 5.0f, "Max distance (eye to chest centre) to open.");
         maxPathNodes = c.getInt("maxPathNodes", CAT_MOVE, maxPathNodes, 1000, 200000, "A* search limit per path.");
         stuckTicks = c.getInt("stuckTicks", CAT_MOVE, stuckTicks, 10, 400, "Ticks without progress before re-pathing.");
         maxRepaths = c.getInt("maxRepaths", CAT_MOVE, maxRepaths, 0, 20, "Re-path attempts before giving up a chest.");
 
         clickDelayTicks = c
-            .getInt("clickDelayTicks", CAT_SAFETY, clickDelayTicks, 1, 40, "Ticks between stack transfers.");
+            .getInt("clickDelayTicks", CAT_SAFETY, clickDelayTicks, 1, 40, "Ticks between stack transfers (1 = one stack per tick).");
         settleTicks = c.getInt(
             "settleTicks",
             CAT_SAFETY,
             settleTicks,
             2,
             40,
-            "Ticks to wait for the server before checking a result. Raise on laggy servers.");
+            "Ticks to wait for the server before checking a chest before it closes. Raise on laggy servers.");
         openTimeoutTicks = c
             .getInt("openTimeoutTicks", CAT_SAFETY, openTimeoutTicks, 10, 400, "Ticks to wait for a chest to open.");
         verifyEveryTransfer = c.getBoolean(
             "verifyEveryTransfer",
             CAT_SAFETY,
             verifyEveryTransfer,
-            "Wait settleTicks and check item totals after every single stack transfer. Slower, strongly recommended.");
+            "Also wait settleTicks and check after every single transfer, not only before each chest closes. Much slower.");
         hostileRadius = c
             .getInt("hostileRadius", CAT_SAFETY, hostileRadius, 0, 32, "Stop if a hostile mob is this close. 0 = off.");
         minHealthFraction = c.getFloat(
@@ -80,6 +101,12 @@ public class Config {
             0.0f,
             1.0f,
             "Stop if health falls below this fraction of max.");
+        finalRecheck = c.getBoolean(
+            "finalRecheck",
+            CAT_SAFETY,
+            finalRecheck,
+            "After sorting, walk back and re-open every touched chest to compare totals. Each chest is already checked "
+                + "before it closes, so this is an extra, slower check.");
         maxTrips = c.getInt("maxTrips", CAT_SAFETY, maxTrips, 1, 10000, "Max carry trips per run.");
 
         traceFile = c.getBoolean(

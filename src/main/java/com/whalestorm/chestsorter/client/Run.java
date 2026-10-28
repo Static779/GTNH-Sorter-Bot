@@ -88,6 +88,9 @@ public final class Run {
         }
     }
 
+    /** Ticks after a chest opens before its contents are read (they arrive with the open packet). */
+    private static final int OPEN_SETTLE_TICKS = 2;
+
     private final Minecraft mc = Minecraft.getMinecraft();
     private final Mode mode;
     private final Trace trace;
@@ -120,6 +123,12 @@ public final class Run {
     /** Hotbar slot selected for the run (empty hand), and the one to restore afterwards. */
     private int handSlot = -1, originalHandSlot = -1;
     private int wait;
+    /** Set by a transfer: end this tick after it, so transfers run at most one per tick. */
+    private boolean yieldTick;
+    /** Snapshot taken when the current chest finished opening; checked again before it closes. */
+    private Map<Integer, Long> openTotals;
+    private int[] openInvKeys, openInvCounts;
+    private Set<Integer> carriedAtOpen;
 
     public Run(Mode mode, Trace trace) {
         this.mode = mode;
@@ -189,9 +198,8 @@ public final class Run {
             return true;
         }
         state = SorterState.SURVEY;
-        for (int i = 0; i < containers.size(); i++) {
-            String g = "survey #" + i;
-            final int id = i;
+        for (final int id : nearestFirstOrder(Walker.feet(p))) {
+            String g = "survey #" + id;
             steps.add(new GoTo(g, true, id));
             steps.add(new Open(g, true, id));
             steps.add(new Step(g, true) {
@@ -267,7 +275,10 @@ public final class Run {
                 onStepFailed(done);
                 return;
             }
-            if (wait > 0) return;
+            if (wait > 0 || yieldTick) {
+                yieldTick = false;
+                return;
+            }
         }
     }
 
@@ -313,6 +324,12 @@ public final class Run {
                     return;
                 }
                 state = SorterState.VERIFY;
+                if (!Config.finalRecheck) {
+                    // Every touched chest was already checked before it closed; compare those last-seen states.
+                    finishVerify();
+                    return;
+                }
+                after.clear();
                 for (int id : touched) {
                     String g = "verify #" + id;
                     final int cid = id;
@@ -425,11 +442,13 @@ public final class Run {
             }
         });
         for (int i = 0; i < trip.picks.size(); i++) steps.add(new Pick(g, src, i, trip.picks.get(i), pickToSlot));
+        steps.add(new VerifyVisit(g, src));
         steps.add(new Close(g, false));
         for (Plan.Deposit d : trip.deposits) {
             steps.add(new GoTo(g, false, d.target));
             steps.add(new Open(g, false, d.target));
             for (int idx : d.picks) steps.add(new Deposit(g, d.target, idx, pickToSlot, false));
+            steps.add(new VerifyVisit(g, d.target));
             steps.add(new Close(g, false));
         }
         steps.add(new Step(g, false) {
@@ -460,6 +479,7 @@ public final class Run {
             for (Map.Entry<Integer, Carried> e : carried.entrySet()) {
                 if (e.getValue().sourceChest == src) ret.add(new ReturnStack(g, src, e.getKey()));
             }
+            ret.add(new VerifyVisit(g, src));
             ret.add(new Close(g, false));
         }
         ret.add(new Step(g, false) {
@@ -538,7 +558,7 @@ public final class Run {
                         failure = "chest #" + id + " is out of reach";
                         return Outcome.FAILED;
                     }
-                    if (Walker.aimAt(p, pos(id)) || ticks > 15) {
+                    if (Walker.aimAt(p, pos(id)) || ticks > 3) {
                         phase = 1;
                     }
                     return Outcome.RUNNING;
@@ -579,7 +599,7 @@ public final class Run {
                     }
                     return Outcome.RUNNING;
                 default: { // wait for contents, then require two identical reads
-                    if (ticks < Config.settleTicks) return Outcome.RUNNING;
+                    if (ticks < OPEN_SETTLE_TICKS) return Outcome.RUNNING;
                     int expectedSlots = containers.get(id).slots;
                     int actual = GuiOps.chestSlots(p.openContainer, p)
                         .size();
@@ -590,16 +610,19 @@ public final class Run {
                     ChestModel m = readOpen(id);
                     if (lastRead != null && java.util.Arrays.equals(lastRead.keys, m.keys)
                         && java.util.Arrays.equals(lastRead.counts, m.counts)) {
-                        if (++stableReads >= 1) return Outcome.DONE;
+                        if (++stableReads >= 1) {
+                            snapshotOpen();
+                            return Outcome.DONE;
+                        }
                     } else {
                         stableReads = 0;
                     }
                     lastRead = m;
-                    if (ticks > Config.settleTicks + 40) {
+                    if (ticks > OPEN_SETTLE_TICKS + 40) {
                         failure = "chest #" + id + " contents kept changing";
                         return Outcome.FAILED;
                     }
-                    wait = 2;
+                    wait = 1;
                     return Outcome.RUNNING;
                 }
             }
@@ -722,7 +745,8 @@ public final class Run {
                         + "] -> inv "
                         + carryIndex);
                 phase = 1;
-                wait = Config.verifyEveryTransfer ? Config.settleTicks : 0;
+                if (!Config.verifyEveryTransfer) return tick(); // check the client view now; server checked per visit
+                wait = Config.settleTicks;
                 return Outcome.RUNNING;
             }
             // verify after the server had time to answer
@@ -736,7 +760,8 @@ public final class Run {
                 return fail("carry slot holds " + GuiOps.describe(inCarry, keys));
             }
             if (p.inventory.getItemStack() != null) return fail("cursor not empty after pickup");
-            wait = Config.clickDelayTicks;
+            wait = Config.clickDelayTicks - 1;
+            yieldTick = true;
             return Outcome.DONE;
         }
     }
@@ -844,7 +869,8 @@ public final class Run {
                         + target
                         + (leftCount > 0 ? " (" + leftCount + " did not fit, kept in inv " + invIndex + ")" : ""));
                 phase = 1;
-                wait = Config.verifyEveryTransfer ? Config.settleTicks : 0;
+                if (!Config.verifyEveryTransfer) return tick();
+                wait = Config.settleTicks;
                 return Outcome.RUNNING;
             }
             if (!requireOpen(target)) return Outcome.FAILED;
@@ -857,7 +883,8 @@ public final class Run {
             int haveLeft = inCarry == null ? 0 : inCarry.stackSize;
             if (haveLeft != expectLeft)
                 return fail("inventory slot " + invIndex + " holds " + haveLeft + ", expected " + expectLeft);
-            wait = Config.clickDelayTicks;
+            wait = Config.clickDelayTicks - 1;
+            yieldTick = true;
             return Outcome.DONE;
         }
     }
@@ -876,9 +903,81 @@ public final class Run {
         return m;
     }
 
+    /**
+     * Server check for one chest visit, run just before the chest closes: after settleTicks, the open container must
+     * hold exactly the items it held when it opened, the cursor must be empty, every carried stack must be in its carry
+     * slot, and every other inventory slot must be as it was when the chest opened.
+     */
+    private final class VerifyVisit extends Step {
+
+        final int id;
+        boolean waited;
+
+        VerifyVisit(String g, int id) {
+            super(g, false);
+            this.id = id;
+        }
+
+        String describe() {
+            return "check chest #" + id + " before closing";
+        }
+
+        Outcome tick() {
+            if (!requireOpen(id)) return Outcome.FAILED;
+            if (!waited) {
+                waited = true;
+                wait = Config.settleTicks;
+                return Outcome.RUNNING;
+            }
+            EntityClientPlayerMP p = mc.thePlayer;
+            if (p.inventory.getItemStack() != null) return fail("cursor not empty before closing chest #" + id);
+            Map<Integer, Long> now = GuiOps.totals(p.openContainer, p, keys);
+            if (!now.equals(openTotals)) {
+                return fail("item totals in chest #" + id + " + inventory changed: " + GuiOps.diff(openTotals, now, keys));
+            }
+            for (int i = 0; i < 36; i++) {
+                ItemStack st = p.inventory.getStackInSlot(i);
+                int k = keys.keyOf(st), n = st == null ? 0 : st.stackSize;
+                int ek, en;
+                Carried c = carried.get(i);
+                if (c != null) {
+                    ek = c.key;
+                    en = c.count;
+                } else if (carriedAtOpen.contains(i)) {
+                    ek = ChestModel.EMPTY;
+                    en = 0;
+                } else {
+                    ek = openInvKeys[i];
+                    en = openInvCounts[i];
+                }
+                if (k != ek || n != en) {
+                    return fail("inventory slot " + i + " holds " + GuiOps.describe(st, keys) + ", expected "
+                        + (ek == ChestModel.EMPTY ? "empty" : en + " x " + keys.label(ek)));
+                }
+            }
+            after.put(id, readOpen(id));
+            trace.step("Chest #" + id + " checked: totals unchanged, inventory as expected");
+            return Outcome.DONE;
+        }
+    }
+
     // =====================================================================================================
     // helpers
     // =====================================================================================================
+
+    /** Records what the just-opened container and the inventory hold, for {@link VerifyVisit}. */
+    private void snapshotOpen() {
+        EntityClientPlayerMP p = mc.thePlayer;
+        openTotals = GuiOps.totals(p.openContainer, p, keys);
+        openInvKeys = new int[36];
+        openInvCounts = new int[36];
+        for (int i = 0; i < 36; i++) {
+            ItemStack st = p.inventory.getStackInSlot(i);
+            openInvKeys[i] = keys.keyOf(st);
+            openInvCounts[i] = st == null ? 0 : st.stackSize;
+        }
+        carriedAtOpen = new TreeSet<>(carried.keySet());
+    }
 
     private Outcome fail(String why) {
         failure = why;
@@ -1046,6 +1145,31 @@ public final class Run {
             p.inventory.currentItem = originalHandSlot;
         }
         handSlot = -1;
+    }
+
+    /** Visit order: always the nearest not-yet-visited chest from the previous one. */
+    private List<Integer> nearestFirstOrder(BlockPos start) {
+        List<Integer> left = new ArrayList<>();
+        for (int i = 0; i < containers.size(); i++) left.add(i);
+        List<Integer> order = new ArrayList<>();
+        BlockPos at = start;
+        while (!left.isEmpty()) {
+            int best = 0;
+            double bestD = Double.MAX_VALUE;
+            for (int j = 0; j < left.size(); j++) {
+                BlockPos b = pos(left.get(j));
+                double dx = b.x - at.x, dy = b.y - at.y, dz = b.z - at.z;
+                double d = dx * dx + dy * dy * 4 + dz * dz; // height changes cost more to walk
+                if (d < bestD) {
+                    bestD = d;
+                    best = j;
+                }
+            }
+            int id = left.remove(best);
+            order.add(id);
+            at = pos(id);
+        }
+        return order;
     }
 
     private static int countUsed(ChestModel m) {

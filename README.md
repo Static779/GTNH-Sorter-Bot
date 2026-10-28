@@ -30,10 +30,10 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
 - Pick-up and put-down happen in the same game tick, so nothing sits on the cursor between ticks or when a chest closes.
 - Picked stacks go only into inventory slots that were **empty when the run started**. Your own items, hotbar and armour are never touched.
 - Before anything moves, the whole plan is replayed on a copy. If items would be created, lost, sent to the wrong category or not fit, nothing moves.
-- After **every** transfer it waits for the server, then checks: item totals in the open chest + your inventory + cursor are unchanged, and the slots hold exactly what was expected. Any mismatch stops the run on the spot.
+- Every click is checked against what the client sees straight away. Before **every chest closes** it waits for the server, then checks: item totals in the chest + your inventory + cursor are exactly what they were when it opened, every carried stack is in its slot, and every other inventory slot is unchanged. Any mismatch stops the run on the spot. (`verifyEveryTransfer` adds a server check after each single stack.)
 - Before taking from a chest, it checks the chest still holds what the survey saw. If it changed, that trip is skipped.
 - If it can't reach a target while carrying, it takes the items back to where they came from. If even that fails, they stay in your inventory and chat tells you which slot holds what, and where it came from.
-- At the end it re-opens every chest it touched and compares totals before vs after.
+- At the end it compares, over every chest it touched, the totals from the survey with the totals seen at its final check (`finalRecheck` walks back and re-opens them instead).
 
 ## Stops by itself when
 You take damage, health drops below 50%, a hostile mob is within 8 blocks, you press any movement/jump/sneak/attack/use/inventory key, any screen opens (chat, inventory), a chest screen closes, the hotbar selection changes, or you change world.
@@ -42,7 +42,7 @@ You take damage, health drops below 50%, a hostile mob is within 8 blocks, you p
 Every run writes `.minecraft\chestsorter\trace-<date>-<time>.log`: every step, every path, every click (window, slot, slot contents, cursor), every check, the full plan and each item's category and ore names. Chat prints the file's path at the end of each run. Send me that file.
 
 ## Settings
-`config/chestsorter.cfg`: `scanRadius` (16), `walking` (true), `reach` (4.0), `clickDelayTicks` (3), `settleTicks` (5, raise on laggy servers), `verifyEveryTransfer` (true), `hostileRadius` (8), `minHealthFraction` (0.5), `maxTrips` (300), `traceFile` (true), `verboseChat` (false).
+`config/chestsorter.cfg`: `scanRadius` (16), `walking` (true), `sprint` (true), `reach` (4.0), `clickDelayTicks` (1 = one stack per tick), `settleTicks` (4, raise on laggy servers), `verifyEveryTransfer` (false; true = also check after every single stack, much slower), `finalRecheck` (false; true = walk back and re-open every touched chest at the end), `hostileRadius` (8), `minHealthFraction` (0.5), `maxTrips` (300), `traceFile` (true), `verboseChat` (false). Older config files get the new speed defaults automatically (`configVersion` 2); your other settings are kept.
 
 ## Limits (v1)
 - Containers: vanilla chests (incl. trapped, double) and Iron Chests (all tiers except Dirt Chest 9000).

@@ -12,6 +12,8 @@ public final class AutoInput extends MovementInput {
 
     public float forward;
     public boolean jumpNext;
+    /** Requested by the walker; applied with setSprinting (vanilla cancels it when forward input drops). */
+    public boolean sprint;
 
     private MovementInput original;
     private EntityPlayerSP player;
@@ -31,6 +33,7 @@ public final class AutoInput extends MovementInput {
         p.movementInput = this;
         forward = 0f;
         jumpNext = false;
+        sprint = false;
     }
 
     /** Puts the keyboard input back. Safe to call more than once. */
@@ -40,6 +43,7 @@ public final class AutoInput extends MovementInput {
         original = null;
         forward = 0f;
         jumpNext = false;
+        sprint = false;
     }
 
     public boolean installed() {
