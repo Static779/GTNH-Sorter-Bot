@@ -51,3 +51,5 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 - [Certain] 2026-10-27: `main` @ a955a2b builds green on GTNH's build-and-test workflow (compile, Spotless/Checkstyle, dedicated-server smoke run). Artifacts: `chestsorter-a955a2b.jar` (the one to install), `-dev`, `-sources`.
 - [Certain] Only Spotless failed on the first run (one wrapped call in Config.java); fixed by applying its diff.
 - [Certain] This session can push branches to the repo but not tags or branch deletions.
+- [Certain] 2026-10-27: stage 0 tested in game by you: mod loads, key prints SCAN / IDLE.
+- [Certain] 2026-10-27: stage 1 (container scanner) @ 7cb1a85 builds green incl. server run. Not yet run in game.
