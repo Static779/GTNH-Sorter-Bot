@@ -31,3 +31,13 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 
 ## Not verified yet
 - [Likely] Forge reference source is the MinecraftForge `1.7.10` branch head; exact build number not confirmed as 1614. The real decompiled source comes from `./gradlew setupDecompWorkspace` on your PC.
+
+## Decisions (2026-10-27, from your answers)
+- Build route: GitHub CI (GTNH shared `build-and-test.yml`). [Certain] It checks out full history (tags needed for the version) and uploads `build/libs/` only for public repos.
+- Your setup: Windows, Prism Launcher, instance on Java 21, IntelliJ installed.
+- First allow-list: vanilla chests and Iron Chests (all tiers). GT Super/Quantum Chests, drawers and barrels later.
+- Use: singleplayer, own server and public servers. Rate limiting between clicks stays for desync safety; nothing will be built to hide the mod from server staff. Check each server's rules.
+- Ignore the 34 jars that couldn't be downloaded.
+- Names kept: Chest Sorter / `chestsorter` / `com.whalestorm.chestsorter` / author Whalestorm.
+- Toggle key ships unbound.
+- License: LGPL-3.0 (`LICENSE`, with GPL-3.0 in `COPYING`). Compatible with reusing InventoryBogoSorter (LGPL-3.0) code with credit.
