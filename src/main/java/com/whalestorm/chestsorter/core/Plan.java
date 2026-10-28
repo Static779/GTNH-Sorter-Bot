@@ -63,18 +63,27 @@ public final class Plan {
     public final Map<Integer, String> chestCategory;
     /** Categories with no chest; their items are left in place. */
     public final List<String> unassigned;
+    /** Small category → the category whose chests take its items. */
+    public final Map<String, String> merged;
     /** Misplaced stacks that had nowhere to go (target chests full). Left in place. */
     public final int stacksLeftNoRoom;
     /** Expected end state per chest id if every trip succeeds. */
     public final Map<Integer, ChestModel> expected;
 
-    public Plan(List<Trip> trips, Map<Integer, String> chestCategory, List<String> unassigned, int stacksLeftNoRoom,
-        Map<Integer, ChestModel> expected) {
+    public Plan(List<Trip> trips, Map<Integer, String> chestCategory, List<String> unassigned,
+        Map<String, String> merged, int stacksLeftNoRoom, Map<Integer, ChestModel> expected) {
         this.trips = Collections.unmodifiableList(new ArrayList<>(trips));
         this.chestCategory = Collections.unmodifiableMap(chestCategory);
         this.unassigned = Collections.unmodifiableList(new ArrayList<>(unassigned));
+        this.merged = Collections.unmodifiableMap(merged);
         this.stacksLeftNoRoom = stacksLeftNoRoom;
         this.expected = Collections.unmodifiableMap(expected);
+    }
+
+    /** The category whose chests an item of {@code category} belongs in. */
+    public String effective(String category) {
+        String m = merged.get(category);
+        return m != null ? m : category;
     }
 
     public int stackMoves() {

@@ -41,13 +41,7 @@ public final class Planner {
             progress = false;
             for (ChestModel original : chests) {
                 if (trips.size() >= maxTrips) break;
-                Plan.Trip trip = planTrip(
-                    sim.get(original.id),
-                    sim,
-                    items,
-                    assignment.chestCategory,
-                    chestsOf,
-                    carrySlots);
+                Plan.Trip trip = planTrip(sim.get(original.id), sim, items, assignment, chestsOf, carrySlots);
                 if (trip != null) {
                     trips.add(trip);
                     progress = true;
@@ -58,22 +52,22 @@ public final class Planner {
         int leftNoRoom = 0;
         for (ChestModel c : sim.values()) {
             for (int s = 0; s < c.size(); s++) {
-                if (isMisplaced(c, s, items, assignment.chestCategory, chestsOf)) leftNoRoom++;
+                if (isMisplaced(c, s, items, assignment, chestsOf)) leftNoRoom++;
             }
         }
-        return new Plan(trips, assignment.chestCategory, assignment.unassigned, leftNoRoom, sim);
+        return new Plan(trips, assignment.chestCategory, assignment.unassigned, assignment.merged, leftNoRoom, sim);
     }
 
     /** Builds one trip from {@code source}, committing its effects to {@code sim}. Null if nothing can move. */
     private static Plan.Trip planTrip(ChestModel source, Map<Integer, ChestModel> sim, Map<Integer, ItemInfo> items,
-        Map<Integer, String> chestCategory, Map<String, List<Integer>> chestsOf, int carrySlots) {
+        Assigner.Result assignment, Map<String, List<Integer>> chestsOf, int carrySlots) {
         Map<Integer, ChestModel> scratch = new HashMap<>();
         ChestModel src = source.copy();
         List<Plan.Pick> picks = new ArrayList<>();
         Map<Integer, List<Integer>> byTarget = new LinkedHashMap<>();
 
         for (int s = 0; s < src.size() && picks.size() < carrySlots; s++) {
-            if (!isMisplaced(src, s, items, chestCategory, chestsOf)) continue;
+            if (!isMisplaced(src, s, items, assignment, chestsOf)) continue;
             int key = src.keys[s];
             int count = src.counts[s];
             ItemInfo info = Assigner.info(items, key);
@@ -81,7 +75,7 @@ public final class Planner {
             Integer target = null;
             double bestDist = Double.MAX_VALUE;
             boolean bestAlreadyVisited = false;
-            for (int t : chestsOf.get(info.category)) {
+            for (int t : chestsOf.get(assignment.effective(info.category))) {
                 if (t == src.id) continue;
                 ChestModel tm = scratch.containsKey(t) ? scratch.get(t) : sim.get(t);
                 if (tm.roomFor(key, info.maxStack) < count) continue;
@@ -130,13 +124,16 @@ public final class Planner {
         return new Plan.Trip(src.id, picks, deposits);
     }
 
-    /** True if the stack in this slot belongs to a category that has chests, and this chest is not one of them. */
-    public static boolean isMisplaced(ChestModel c, int slot, Map<Integer, ItemInfo> items,
-        Map<Integer, String> chestCategory, Map<String, List<Integer>> chestsOf) {
+    /**
+     * True if the stack in this slot belongs (after merging) to a category that has chests, and this chest is not one
+     * of them.
+     */
+    public static boolean isMisplaced(ChestModel c, int slot, Map<Integer, ItemInfo> items, Assigner.Result assignment,
+        Map<String, List<Integer>> chestsOf) {
         int key = c.keys[slot];
         if (key == ChestModel.EMPTY) return false;
-        String cat = Assigner.info(items, key).category;
-        if (cat.equals(chestCategory.get(c.id))) return false;
+        String cat = assignment.effective(Assigner.info(items, key).category);
+        if (cat.equals(assignment.chestCategory.get(c.id))) return false;
         List<Integer> owners = chestsOf.get(cat);
         return owners != null && !owners.isEmpty();
     }

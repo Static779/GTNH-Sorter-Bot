@@ -71,3 +71,9 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 - [Likely] The stuck re-pathing toward -1870 60 4555 came from the feet-height calculation (floor(minY+0.01)): standing on a chest (0.875 tall) put the start node inside the chest block. Now floor(minY+0.5).
 - Server check moved from every stack to once per chest visit (before close); clicks still checked against the client view immediately.
 - [Certain] c0ab09d builds green (compile, Spotless, server run). Not yet run in game.
+
+## Category layout (2026-10-28, from your request)
+- Your choice: all four ideas weighted (fewer moves, room, same category together, related nearby); small categories merge into their nearest relative.
+- Categorizer: recipe-group prefixes (list, crafting, item, ...) ignored; mod buckets split by creative tab. On your trace's 870 items, 52 change category (13 list → seed, 5 crafting → book, ...).
+- Assigner: weighted cost = stacks moved + 4 × slots short + layoutWeight × (apart + 0.5 × related distance); start from current contents, place categories with no chest in the cheapest empty chest, then single changes + best swap per pass. Deterministic; capped at 60k evaluations (60 chests ≈ 0.2 s here).
+- Relations: GT processing chains (my reading of GT's ore processing order) [Likely], name nesting, same mod.

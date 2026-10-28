@@ -43,6 +43,12 @@ public class CoreTests {
         // assigner
         assignerMajorityAndEmpties();
         assignerLocked();
+        assignerMergesIntoRelative();
+        assignerUnrelatedSmallStays();
+        assignerBigCategoryTogether();
+        assignerRelatedNearby();
+        assignerDeterministicAndFast();
+        relations();
         // planner
         plannerBasicSort();
         plannerLeavesUnassignedAndFull();
@@ -139,6 +145,12 @@ public class CoreTests {
         // Boundary: "ingotx" is not "ingot" + name.
         eq("ingotx", c.categorize(Arrays.asList("ingotx"), "x"));
         check("prefix of null", c.prefixOf(null) == null);
+        // Recipe-group names are ignored in favour of real ones, or fall through to mod + tab.
+        eq("seed", c.categorize(Arrays.asList("listAllseed", "seedCotton"), "harvestcraft"));
+        eq("book", c.categorize(Arrays.asList("bookEmpty", "craftingBook"), "minecraft"));
+        eq("mod:minecraft:redstone", c.categorize(Arrays.asList("craftingPiston"), "minecraft", "redstone"));
+        eq("mod:gregtech:gregtech.main", c.categorize(new ArrayList<String>(), "gregtech", "GregTech.Main"));
+        eq("craftingTool", c.categorize(Arrays.asList("craftingToolWrench"), "gregtech", "x"));
     }
 
     // ---------------- model ----------------
@@ -181,9 +193,11 @@ public class CoreTests {
         // Not enough empties.
         Assigner.Result r2 = Assigner.assign(Arrays.asList(chest(0, 27, 0, 64, 0, 64, 1, 10)), it);
         check("dust unassigned", r2.unassigned.equals(Arrays.asList("dust")));
-        // Tie goes alphabetical.
+        // One chest, two unrelated equal-size categories: the alphabetically first ("dust") has no relative to merge
+        // into, so it stays where it is and the chest becomes "ingot".
         Assigner.Result r3 = Assigner.assign(Arrays.asList(chest(0, 27, 1, 1, 0, 1)), it);
-        eq("dust", r3.chestCategory.get(0));
+        eq("ingot", r3.chestCategory.get(0));
+        check("tie: dust unassigned", r3.unassigned.equals(Arrays.asList("dust")));
     }
 
     static void assignerLocked() {
@@ -195,10 +209,106 @@ public class CoreTests {
         eq("ingot", r.chestCategory.get(1));
     }
 
+    /** A chest at an explicit position. */
+    static ChestModel chestAt(int id, int x, int slots, int... keyCount) {
+        ChestModel c = new ChestModel(id, new BlockPos(x, 64, 0), "c", slots, 64);
+        for (int i = 0, s = 0; i < keyCount.length; i += 2, s++) c.set(s, keyCount[i], keyCount[i + 1]);
+        return c;
+    }
+
+    static void assignerMergesIntoRelative() {
+        Map<Integer, ItemInfo> it = items("dust", "ingot", "dustTiny");
+        // Two chests, three categories: dustTiny (smallest) merges into its relative dust.
+        List<ChestModel> cs = Arrays.asList(chest(0, 27, 0, 64, 0, 64, 0, 64), chest(1, 27, 1, 64, 1, 64, 2, 7));
+        Plan p = planAndCheck("merge", cs, it, 27);
+        eq("dust", lastAssign.merged.get("dustTiny"));
+        check("merge: nothing unassigned", lastAssign.unassigned.isEmpty());
+        check("merge: tiny dust moved into the dust chest", p.expected.get(0).totals().containsKey(2)
+            && !p.expected.get(1).totals().containsKey(2));
+    }
+
+    static void assignerUnrelatedSmallStays() {
+        Map<Integer, ItemInfo> it = items("mod:a", "mod:b", "misc");
+        List<ChestModel> cs = Arrays.asList(chest(0, 27, 0, 64, 0, 64, 2, 1), chest(1, 27, 1, 64));
+        Plan p = planAndCheck("unrelated", cs, it, 27);
+        check("unrelated: misc stays put", lastAssign.unassigned.equals(Arrays.asList("misc")));
+        check("unrelated: misc not moved", p.expected.get(0).totals().containsKey(2));
+    }
+
+    static void assignerBigCategoryTogether() {
+        Map<Integer, ItemInfo> it = items("alpha", "beta", "gamma");
+        // 4 chests of 3 slots in a row (x = 0,2,4,6). alpha needs 2 chests but starts in chests 0 and 2.
+        List<ChestModel> cs = Arrays.asList(
+            chestAt(0, 0, 3, 0, 64, 0, 64, 0, 64),
+            chestAt(1, 2, 3, 1, 64),
+            chestAt(2, 4, 3, 0, 64, 0, 64),
+            chestAt(3, 6, 3, 2, 64));
+        Assigner.Result r = Assigner.assign(cs, it);
+        eq("alpha", r.chestCategory.get(0));
+        eq("alpha", r.chestCategory.get(1)); // pulled next to chest 0
+        Plan p = Planner.plan(cs, it, r, 27, 100);
+        check("together: plan clean", PlanChecker.check(cs, p, it, 27).isEmpty());
+        // layoutWeight 0: only moves count, so nothing is rearranged.
+        Assigner.Result r0 = Assigner.assign(cs, it, new HashMap<Integer, String>(), new Assigner.Weights(1, 0));
+        eq("alpha", r0.chestCategory.get(0));
+        eq("alpha", r0.chestCategory.get(2));
+        eq("beta", r0.chestCategory.get(1));
+    }
+
+    static void assignerRelatedNearby() {
+        Map<Integer, ItemInfo> it = items("crushed", "ingot", "crushedPurified");
+        // crushed at x=0, ingot chest at x=2 also holding a crushedPurified stack, empty chests at x=6 and x=4.
+        // Listed x=6 first, so the plain "first empty chest" would be x=6; related-nearby should pick x=4.
+        List<ChestModel> cs = Arrays.asList(
+            chestAt(0, 0, 27, 0, 64),
+            chestAt(1, 2, 27, 1, 64, 1, 64, 2, 64),
+            chestAt(3, 6, 27),
+            chestAt(2, 4, 27));
+        Assigner.Result r = Assigner.assign(cs, it);
+        eq("crushedPurified", r.chestCategory.get(2));
+        check("related: far chest unused", !r.chestCategory.containsKey(3));
+    }
+
+    static void assignerDeterministicAndFast() {
+        Random rnd = new Random(7);
+        String[] cats = { "ore", "rawOre", "crushed", "crushedPurified", "dustImpure", "dust", "dustTiny", "ingot",
+            "nugget", "plate", "gem", "mod:minecraft:redstone", "mod:minecraft:food", "mod:gregtech:main", "misc" };
+        Map<Integer, ItemInfo> it = new HashMap<>();
+        for (int k = 0; k < 80; k++) it.put(k, new ItemInfo(k, "i" + k, cats[rnd.nextInt(cats.length)], 64));
+        List<ChestModel> cs = new ArrayList<>();
+        for (int c = 0; c < 60; c++) {
+            ChestModel m = new ChestModel(c, new BlockPos(c % 10, 60 + c / 10, 0), "c", 54, 64);
+            for (int s = 0; s < 54; s++) if (rnd.nextInt(3) > 0) m.set(s, rnd.nextInt(80), 1 + rnd.nextInt(64));
+            cs.add(m);
+        }
+        long t0 = System.nanoTime();
+        Assigner.Result a = Assigner.assign(cs, it);
+        long ms = (System.nanoTime() - t0) / 1000000;
+        Assigner.Result b = Assigner.assign(cs, it);
+        check("deterministic", a.chestCategory.equals(b.chestCategory) && a.merged.equals(b.merged));
+        System.out.println("  60-chest assignment took " + ms + " ms; " + a.costReport);
+        check("60 chests assigned in under 3 s (took " + ms + " ms)", ms < 3000);
+        Plan p = Planner.plan(cs, it, a, 20, 1000);
+        List<String> problems = PlanChecker.check(cs, p, it, 20);
+        check("60-chest plan clean " + problems, problems.isEmpty());
+    }
+
+    static void relations() {
+        check("rel chain neighbours", com.whalestorm.chestsorter.core.Relations.score("crushed", "crushedPurified") > 0.8);
+        check("rel chain far ends low", com.whalestorm.chestsorter.core.Relations.score("ore", "dustTiny") <= 0.3 + 1e-9);
+        check("rel nested", com.whalestorm.chestsorter.core.Relations.score("plateDouble", "plate") >= 0.8);
+        check("rel same mod", com.whalestorm.chestsorter.core.Relations.score("mod:gregtech:main", "mod:gregtech") == 0.6);
+        check("rel unrelated", com.whalestorm.chestsorter.core.Relations.score("ingot", "gem") == 0);
+        check("rel not a word prefix", com.whalestorm.chestsorter.core.Relations.score("dust", "dusty") == 0);
+    }
+
     // ---------------- planner ----------------
+
+    static Assigner.Result lastAssign;
 
     static Plan planAndCheck(String name, List<ChestModel> cs, Map<Integer, ItemInfo> it, int carry) {
         Assigner.Result a = Assigner.assign(cs, it);
+        lastAssign = a;
         Plan p = Planner.plan(cs, it, a, carry, 1000);
         List<String> problems = PlanChecker.check(cs, p, it, carry);
         if (!problems.isEmpty()) {
@@ -226,8 +336,11 @@ public class CoreTests {
         ChestModel a = chest(0, 2, 0, 64, 0, 64); // full ingot chest
         ChestModel b = chest(1, 3, 1, 64, 2, 7, 0, 5); // dust chest with a plate stack and 5 ingots
         Plan p = planAndCheck("full", Arrays.asList(a, b), it, 27);
+        // Three categories, two chests, none related: the smallest alphabetically (dust) stays where it is.
+        check("full: dust unassigned", p.unassigned.equals(Arrays.asList("dust")));
+        eq("ingot", p.chestCategory.get(0));
+        eq("plate", p.chestCategory.get(1));
         check("full: ingots cannot move (target full)", p.stackMoves() == 0);
-        check("full: plate unassigned", p.unassigned.contains("plate"));
         check("full: one stack left for lack of room", p.stacksLeftNoRoom == 1);
     }
 
@@ -266,7 +379,8 @@ public class CoreTests {
 
     static void randomizedPlans(int worlds) {
         Random rnd = new Random(12345);
-        String[] cats = { "ingot", "dust", "plate", "gem", "mod:gregtech", "misc" };
+        String[] cats = { "ingot", "nugget", "dust", "dustTiny", "crushed", "plate", "gem", "mod:gregtech",
+            "mod:gregtech:main", "misc" };
         int moved = 0;
         for (int w = 0; w < worlds; w++) {
             int nItems = 1 + rnd.nextInt(12);
@@ -299,10 +413,10 @@ public class CoreTests {
             }
             for (ChestModel c : p.expected.values()) {
                 for (int s = 0; s < c.size(); s++) {
-                    if (!Planner.isMisplaced(c, s, it, p.chestCategory, owners)) continue;
+                    if (!Planner.isMisplaced(c, s, it, lastAssign, owners)) continue;
                     if (p.trips.size() >= 1000) continue;
                     int key = c.keys[s];
-                    for (int t : owners.get(it.get(key).category)) {
+                    for (int t : owners.get(lastAssign.effective(it.get(key).category))) {
                         if (p.expected.get(t).roomFor(key, it.get(key).maxStack) >= c.counts[s]) {
                             failures++;
                             System.out.println("FAIL random world " + w + ": stack left behind although chest " + t
@@ -326,16 +440,16 @@ public class CoreTests {
         Plan.Trip t = good.trips.get(0);
         Plan.Pick p = t.picks.get(0);
         Plan bad = new Plan(Arrays.asList(new Plan.Trip(t.source, Arrays.asList(new Plan.Pick(p.slot, p.key, p.count + 1)),
-            t.deposits)), good.chestCategory, good.unassigned, 0, good.expected);
+            t.deposits)), good.chestCategory, good.unassigned, good.merged, 0, good.expected);
         check("checker: wrong count caught", !PlanChecker.check(cs, bad, it, 27).isEmpty());
         // Deposit to wrong category.
         Plan bad2 = new Plan(Arrays.asList(new Plan.Trip(t.source, t.picks,
-            Arrays.asList(new Plan.Deposit(t.source, Arrays.asList(0))))), good.chestCategory, good.unassigned, 0,
-            good.expected);
+            Arrays.asList(new Plan.Deposit(t.source, Arrays.asList(0))))), good.chestCategory, good.unassigned,
+            good.merged, 0, good.expected);
         check("checker: wrong target caught", !PlanChecker.check(cs, bad2, it, 27).isEmpty());
         // Pick never deposited (item would stay in inventory).
         Plan bad3 = new Plan(Arrays.asList(new Plan.Trip(t.source, t.picks, new ArrayList<Plan.Deposit>())),
-            good.chestCategory, good.unassigned, 0, good.expected);
+            good.chestCategory, good.unassigned, good.merged, 0, good.expected);
         check("checker: undeposited pick caught", !PlanChecker.check(cs, bad3, it, 27).isEmpty());
         // Too many stacks for carry.
         check("checker: carry limit caught", !PlanChecker.check(cs, good, it, 0).isEmpty());

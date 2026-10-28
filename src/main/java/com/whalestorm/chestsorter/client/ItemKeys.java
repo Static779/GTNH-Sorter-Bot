@@ -61,7 +61,7 @@ public final class ItemKeys {
         oreNames.put(key, names);
         infos.put(
             key,
-            new ItemInfo(key, label(stack), categorizer.categorize(names, modIdOf(stack)), stack.getMaxStackSize()));
+            new ItemInfo(key, label(stack), categorizer.categorize(names, modIdOf(stack), tabOf(stack)), stack.getMaxStackSize()));
         return key;
     }
 
@@ -111,6 +111,17 @@ public final class ItemKeys {
         }
         Collections.sort(names);
         return names;
+    }
+
+    /** Creative tab label (e.g. "redstone", "GregTech.Main"), or null. Used to split big mod buckets. */
+    static String tabOf(ItemStack stack) {
+        try {
+            net.minecraft.creativetab.CreativeTabs tab = stack.getItem()
+                .getCreativeTab();
+            return tab == null ? null : tab.getTabLabel();
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     static String modIdOf(ItemStack stack) {

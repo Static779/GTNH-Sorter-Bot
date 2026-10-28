@@ -370,7 +370,11 @@ public final class Run {
             return;
         }
         Map<Integer, ItemInfo> items = keys.infos();
-        Assigner.Result a = Assigner.assign(chests, items);
+        Assigner.Result a = Assigner.assign(
+            chests,
+            items,
+            new java.util.HashMap<Integer, String>(),
+            new Assigner.Weights(1.0, Config.layoutWeight));
         int carry = Math.max(1, carrySlots.size());
         plan = Planner.plan(chests, items, a, carry, Config.maxTrips);
         List<String> problems = PlanChecker.check(chests, plan, items, carry);
@@ -379,13 +383,34 @@ public final class Run {
         for (ItemInfo i : items.values())
             trace.log("  key " + i.key + ": " + i + " max " + i.maxStack + " ore " + keys.oreNames(i.key));
         trace.info("Plan: " + plan.trips.size() + " trips, " + plan.stackMoves() + " stacks to move.");
+        trace.log("Layout " + a.costReport + " (layoutWeight " + Config.layoutWeight + ")");
+        Map<String, Integer> perCategory = new TreeMap<>();
         for (Map.Entry<Integer, String> e : plan.chestCategory.entrySet()) {
             Container c = containers.get(e.getKey());
-            trace.info("  " + c.name + " at " + c.x + " " + c.y + " " + c.z + " -> " + e.getValue());
+            trace.log("  " + c.name + " at " + c.x + " " + c.y + " " + c.z + " -> " + e.getValue());
+            perCategory.merge(e.getValue(), 1, Integer::sum);
+        }
+        StringBuilder sum = new StringBuilder();
+        for (Map.Entry<String, Integer> e : perCategory.entrySet()) {
+            if (sum.length() > 0) sum.append(", ");
+            sum.append(e.getKey());
+            if (e.getValue() > 1) sum.append(" x")
+                .append(e.getValue());
+        }
+        trace.info("Chests: " + sum + " (each chest's category is in the trace)");
+        if (!plan.merged.isEmpty()) {
+            StringBuilder m = new StringBuilder();
+            for (Map.Entry<String, String> e : plan.merged.entrySet()) {
+                if (m.length() > 0) m.append(", ");
+                m.append(e.getKey())
+                    .append(" -> ")
+                    .append(e.getValue());
+            }
+            trace.info("Not enough chests, so these share a related category's chests: " + m);
         }
         if (!plan.unassigned.isEmpty()) {
             trace.warn(
-                "No chest for: " + plan.unassigned
+                "No chest and nothing related for: " + plan.unassigned
                     + ". Those items stay where they are. Add empty chests to sort them.");
         }
         if (plan.stacksLeftNoRoom > 0) {

@@ -8,21 +8,28 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Decides an item's category from its ore-dictionary names and mod id.
+ * Decides an item's category from its ore-dictionary names, mod id and creative tab.
  *
  * Rules, in order:
  * 1. For each ore-dictionary name, find its prefix: the longest known GT prefix the name starts with, where the next
  * character is uppercase, a digit, or the end ("ingotHotTitanium" → "ingotHot", "dustTinyIron" → "dustTiny").
  * If no known prefix matches, the leading lowercase run ("gemAmber" → "gem") is used when it is 2+ letters long.
  * 2. Any prefix starting with "ore" collapses to "ore" (GT has ~50 per-stone ore prefixes; one bucket for ores).
- * 3. Among an item's names, the longest prefix wins; ties go to the alphabetically first prefix.
- * 4. No usable ore-dictionary name → "mod:" + mod id (e.g. "mod:gregtech"). No mod id either → "misc".
+ * 3. Recipe-group prefixes ({@link #WEAK}: "list" from listAllseed, "crafting" from craftingPiston, ...) are ignored:
+ * they group unrelated items. An item with only such names falls through to rule 5.
+ * 4. Among the remaining names, the longest prefix wins; ties go to the alphabetically first prefix.
+ * 5. No usable ore-dictionary name → "mod:" + mod id, narrowed by creative tab when there is one
+ * ("mod:minecraft:redstone", "mod:gregtech:gregtech.main"). No mod id either → "misc".
  *
  * Pure and deterministic: the same inputs always give the same category.
  */
 public final class Categorizer {
 
     public static final String MISC = "misc";
+
+    /** Prefixes that name a recipe group rather than a kind of item. */
+    public static final Set<String> WEAK = new TreeSet<>(
+        java.util.Arrays.asList("list", "crafting", "craft", "item", "material", "component", "any", "all"));
 
     /** Known prefixes, longest first so the first match is the longest. */
     private final List<String> prefixes;
@@ -38,11 +45,15 @@ public final class Categorizer {
     }
 
     public String categorize(Collection<String> oreNames, String modId) {
+        return categorize(oreNames, modId, null);
+    }
+
+    public String categorize(Collection<String> oreNames, String modId, String creativeTab) {
         String best = null;
         if (oreNames != null) {
             for (String name : oreNames) {
                 String p = prefixOf(name);
-                if (p == null) continue;
+                if (p == null || WEAK.contains(p)) continue;
                 if (best == null || p.length() > best.length()
                     || (p.length() == best.length() && p.compareTo(best) < 0)) {
                     best = p;
@@ -51,9 +62,17 @@ public final class Categorizer {
         }
         if (best != null) return best;
         if (modId != null && !modId.trim()
-            .isEmpty()) return "mod:"
-                + modId.trim()
-                    .toLowerCase(Locale.ROOT);
+            .isEmpty()) {
+            String mod = "mod:" + modId.trim()
+                .toLowerCase(Locale.ROOT);
+            if (creativeTab != null && !creativeTab.trim()
+                .isEmpty()) {
+                return mod + ":"
+                    + creativeTab.trim()
+                        .toLowerCase(Locale.ROOT);
+            }
+            return mod;
+        }
         return MISC;
     }
 

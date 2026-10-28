@@ -31,6 +31,8 @@ public class Config {
     public static int hostileRadius = 8;
     public static double minHealthFraction = 0.5;
     public static int maxTrips = 300;
+    /** 0 = only minimise moves; higher = tidier layout (big categories together, related ones near). */
+    public static double layoutWeight = 1.0;
 
     // debug
     public static boolean traceFile = true;
@@ -113,6 +115,15 @@ public class Config {
             "After sorting, walk back and re-open every touched chest to compare totals. Each chest is already checked "
                 + "before it closes, so this is an extra, slower check.");
         maxTrips = c.getInt("maxTrips", CAT_SAFETY, maxTrips, 1, 10000, "Max carry trips per run.");
+        layoutWeight = c.getFloat(
+            "layoutWeight",
+            Configuration.CATEGORY_GENERAL,
+            (float) layoutWeight,
+            0.0f,
+            10.0f,
+            "How much a tidy layout matters against moving fewer stacks. 0 = keep chests' current roles, only move what "
+                + "is out of place. 1 = balanced. Higher = put each category's chests together and related categories "
+                + "(ore > crushed > dust, ingot > nugget, ...) next to each other, even if more stacks move.");
 
         traceFile = c.getBoolean(
             "traceFile",

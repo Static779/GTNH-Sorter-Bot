@@ -21,8 +21,15 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
 | `/chestsorter verbose` | Toggle step-by-step chat |
 
 ## How it decides
-- **Category** of an item: its GregTech ore-dictionary prefix (`ingot`, `dustTiny`, `plateDouble`, `ore`, ...; the 308 prefixes come from GT's own `OrePrefixes`), else `mod:<modid>`, else `misc`.
-- **Chest category**: whatever fills most of its slots. Categories without a chest get an empty chest, nearest first. Categories that still have no chest are **left where they are**.
+- **Category** of an item: its GregTech ore-dictionary prefix (`ingot`, `dustTiny`, `crushedPurified`, `ore`, ...; the 308 prefixes come from GT's own `OrePrefixes`). Recipe-group names (`listAllseed`, `craftingPiston`, `itemSkull`) are ignored. Items without a usable name go to their mod split by creative tab, e.g. `mod:minecraft:redstone`, `mod:gregtech:gregtech.main`; else `misc`.
+- **Which chest gets which category** balances four things:
+  1. few stacks moved (a chest that mostly holds something keeps it),
+  2. enough room (big categories get several chests),
+  3. one category's chests side by side,
+  4. related categories near each other (ore → rawOre → crushed → crushedPurified → dustImpure → dust → dustTiny; ingot ↔ nugget ↔ block; plate ↔ plateDouble ↔ ...; same-mod groups).
+
+  `layoutWeight` in the config sets the balance: 0 = only move what is out of place, 1 = balanced (default), higher = tidier layout even if more moves.
+- **More categories than chests:** the smallest category shares the chests of its most related category (dustTiny → dust). A small category with nothing related stays where it is. The plan lists both.
 - **Moves**: whole stacks only, and only when the target chest has room for the whole stack. Otherwise the stack stays put.
 
 ## Why it can't scramble or lose items

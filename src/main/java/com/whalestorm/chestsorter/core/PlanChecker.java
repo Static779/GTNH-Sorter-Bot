@@ -81,7 +81,8 @@ public final class PlanChecker {
                         problems.add(where + ": no item info for key " + p.key);
                         continue;
                     }
-                    if (!info.category.equals(plan.chestCategory.get(d.target))) {
+                    if (!plan.effective(info.category)
+                        .equals(plan.chestCategory.get(d.target))) {
                         problems.add(
                             where + ": "
                                 + info.label
