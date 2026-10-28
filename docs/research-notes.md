@@ -27,7 +27,7 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 - [Certain] InventoryBogoSorter's `compat/DefaultCompat.java` declares, per Container class, which slot range is the chest (start index, count, row width) for ~30 mods, plus a mixin for Iron Chest containers (`mixins/late/ironchests/MixinIronChestContainer.java`). This is the best existing map for "read_all_slots(open_gui)".
 
 ## Layer 6: walking
-- [Certain] No 1.7.10 Baritone. Baritone v1.2.19 (1.12.2) is cloned in `refs/src/baritone-v1.2.19` for its pathing design (`src/main/java/baritone/pathing`). Code can't be copied directly (different MC version, LGPL-3.0).
+- [Certain] No 1.7.10 Baritone. Baritone v1.2.19 (1.12.2) is cloned in `refs/src/baritone-v1.2.19` for its pathing design (`src/main/java/baritone/pathing`). Code can't be copied as-is (1.12.2 APIs differ); its LGPL-3.0 license matches ours, so adapted parts are allowed with credit.
 
 ## Not verified yet
 - [Likely] Forge reference source is the MinecraftForge `1.7.10` branch head; exact build number not confirmed as 1614. The real decompiled source comes from `./gradlew setupDecompWorkspace` on your PC.
