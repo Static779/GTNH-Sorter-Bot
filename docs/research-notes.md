@@ -63,3 +63,5 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 - [Certain] Categories use GT5U's 308 `OrePrefixBuilder` names (bundled as `assets/chestsorter/gt-ore-prefixes.txt`).
 - Tests: `tools/test-core.sh` — 8235 checks, including 3000 random chest setups replayed by PlanChecker. A deliberately broken planner (whole-stack fit check removed) fails 930 checks, including item-loss detection.
 - [Guessing] Not verifiable here: real timing on servers (settleTicks 5 may be short on laggy servers), walking over unusual GTNH blocks, and chests that change while the run is going.
+- [Certain] 2026-10-27: full sorter @ 20f7c19 builds green (compile, Spotless, Checkstyle, server run). Formatting fixes were taken from CI's own spotlessApply output after checking each file's non-whitespace content was unchanged (one file differed only by doc-comment wrapping).
+- Not yet run in game.
