@@ -125,7 +125,8 @@ public final class Assigner {
         Map<String, Integer> fine = demand(chests, items, new HashMap<String, String>());
         int slots = 0;
         for (ChestModel m : chests) slots += m.size();
-        double avg = (chests.isEmpty() ? 27 : (double) slots / chests.size()) * (1 - Math.max(0, Math.min(0.9, keepFree)));
+        double avg = (chests.isEmpty() ? 27 : (double) slots / chests.size())
+            * (1 - Math.max(0, Math.min(0.9, keepFree)));
         Taxonomy.Buckets bk = tax.bucket(fine, chests.size() - locked.size(), avg, minSplitStacks);
         Map<String, String> pre = new TreeMap<>();
         for (Map.Entry<String, String> e : bk.bucketOf.entrySet()) {
