@@ -151,7 +151,8 @@ public class Config {
             true,
             "Walk to chests out of reach. Off: only chests within reach of where you stand are used.",
             LANG + "walking");
-        sprint = c.getBoolean("sprint", CAT_MOVE, true, "Sprint on straight stretches when food allows.", LANG + "sprint");
+        sprint = c
+            .getBoolean("sprint", CAT_MOVE, true, "Sprint on straight stretches when food allows.", LANG + "sprint");
         reach = dbl(CAT_MOVE, "reach", 4.0, 2.0, 5.0, "Max distance (eye to chest centre) to open a chest.");
         maxPathNodes = c.getInt(
             "maxPathNodes",
@@ -169,14 +170,8 @@ public class Config {
             400,
             "Ticks without progress before finding a new path.",
             LANG + "stuckTicks");
-        maxRepaths = c.getInt(
-            "maxRepaths",
-            CAT_MOVE,
-            3,
-            0,
-            20,
-            "New paths to try before skipping a chest.",
-            LANG + "maxRepaths");
+        maxRepaths = c
+            .getInt("maxRepaths", CAT_MOVE, 3, 0, 20, "New paths to try before skipping a chest.", LANG + "maxRepaths");
 
         c.setCategoryComment(CAT_SAFETY, "Pacing and when to stop.");
         c.setCategoryLanguageKey(CAT_SAFETY, LANG + "cat." + CAT_SAFETY);

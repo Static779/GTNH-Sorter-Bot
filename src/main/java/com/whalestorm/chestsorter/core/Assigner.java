@@ -124,8 +124,7 @@ public final class Assigner {
     }
 
     /** Stacks per category (after {@code pre}), packing each item's stacks full. */
-    static Map<String, Integer> demand(List<ChestModel> chests, Map<Integer, ItemInfo> items,
-        Map<String, String> pre) {
+    static Map<String, Integer> demand(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<String, String> pre) {
         Map<Integer, Long> totals = PlanChecker.totals(chests);
         Map<String, Integer> demand = new TreeMap<>();
         for (Map.Entry<Integer, Long> e : totals.entrySet()) {

@@ -19,7 +19,13 @@ import cpw.mods.fml.client.config.IConfigElement;
 public class SettingsScreen extends GuiConfig {
 
     public SettingsScreen(GuiScreen parent) {
-        super(parent, elements(), ChestSorter.MODID, false, false, ChestSorter.NAME + " settings",
+        super(
+            parent,
+            elements(),
+            ChestSorter.MODID,
+            false,
+            false,
+            ChestSorter.NAME + " settings",
             "Changes apply to the next run");
     }
 

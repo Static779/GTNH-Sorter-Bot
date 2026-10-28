@@ -457,7 +457,8 @@ public final class Run {
         }
         if (!plan.unassigned.isEmpty()) {
             trace.warn(
-                "No chest for: " + plan.unassigned + ". Those items stay where they are. Add empty chests to sort them.");
+                "No chest for: " + plan.unassigned
+                    + ". Those items stay where they are. Add empty chests to sort them.");
         }
         if (plan.stacksLeftNoRoom > 0) {
             trace.warn(plan.stacksLeftNoRoom + " stacks stay where they are: their category's chests are full.");
@@ -773,8 +774,15 @@ public final class Run {
             EntityClientPlayerMP p = mc.thePlayer;
             if (phase == 0) {
                 if (unreachable.contains(target)) {
-                    trace.step("Leaving " + pick.count + " x " + keys.label(pick.key) + " in #" + src
-                        + ": its chest #" + target + " was unreachable");
+                    trace.step(
+                        "Leaving " + pick.count
+                            + " x "
+                            + keys.label(pick.key)
+                            + " in #"
+                            + src
+                            + ": its chest #"
+                            + target
+                            + " was unreachable");
                     return Outcome.DONE;
                 }
                 if (!requireOpen(src)) return Outcome.FAILED;
@@ -1076,8 +1084,9 @@ public final class Run {
         if (now.equals(before)) return true;
         if (GuiOps.looseTotals(now, keys)
             .equals(GuiOps.looseTotals(before, keys))) {
-            trace.log("Note: an item changed its own NBT/durability (counts unchanged, allowed): "
-                + GuiOps.diff(before, now, keys));
+            trace.log(
+                "Note: an item changed its own NBT/durability (counts unchanged, allowed): "
+                    + GuiOps.diff(before, now, keys));
             return true;
         }
         return false;

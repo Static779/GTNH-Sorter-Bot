@@ -29,7 +29,8 @@ import java.util.TreeSet;
  * </ol>
  *
  * Group lines: {@code name: member, member*, ...}. A member is a fine category name, or a prefix ending in "*".
- * Exact names win over prefixes; the longest prefix wins among prefixes. A category no line covers goes to "mod:&lt;id&gt;"
+ * Exact names win over prefixes; the longest prefix wins among prefixes. A category no line covers goes to
+ * "mod:&lt;id&gt;"
  * for mod categories, otherwise forms a group of its own. Pure and deterministic.
  */
 public final class Taxonomy {
@@ -44,8 +45,7 @@ public final class Taxonomy {
         "gems: gem*, lens, crystal, coal, charcoal, glowstone, enderpearl, pearl",
         "plates: plate*, foil*, sheet*, itemCasing, plating",
         "parts: stick*, rod, bolt, screw, round, ring, spring*, gear*, rotor, frame*, turbine*, handle*, toolHead*, blockCasing*",
-        "wires: wire*, cable*",
-        "pipes: pipe*",
+        "wires: wire*, cable*", "pipes: pipe*",
         "electronics: circuit*, battery*, wafer, chipset, componentCircuit, wrapCircuit, motor, cover, nanite, computer, reactor, mod:minecraft:redstone",
         "fluids: cell*, capsule*, bucket*, bottle, liquid, plasma, molecule, mod:minecraft:brewing",
         "tools: tool*, craftingTool*, shears, scoop, grafter, armor*, bullet*, bauble, mod:minecraft:tools, mod:minecraft:combat, mod:tconstruct*",
@@ -55,8 +55,7 @@ public final class Taxonomy {
         "farming: seed*, crop*, plant*, flower*, petal, mushroom, reed, sugarcane, pinecone, beans, fertilizer, bee*, comb, wax, apiaryUpgrade",
         "food: food*, flour, egg, cooking, bowl, mod:minecraft:food, mod:harvestcraft*",
         "mobdrops: bone, string, feather, leather, slimeball, gunpowder, soul*, skull, drop, mod:minecraft:materials",
-        "dyes: dye*, blockWool, wool*",
-        "books: book, paper, record, tome, rune, mana, essence" };
+        "dyes: dye*, blockWool, wool*", "books: book, paper, record, tome, rune, mana, essence" };
 
     private final List<String> groups = new ArrayList<>();
     private final Map<String, Integer> groupIndex = new HashMap<>();
@@ -111,7 +110,12 @@ public final class Taxonomy {
                     t.prefixes.add(new String[] { p, name });
                 } else if (t.exact.containsKey(member)) {
                     t.problems.add(
-                        "\"" + member + "\" is in both \"" + t.exact.get(member) + "\" and \"" + name + "\"; first wins");
+                        "\"" + member
+                            + "\" is in both \""
+                            + t.exact.get(member)
+                            + "\" and \""
+                            + name
+                            + "\"; first wins");
                 } else {
                     t.exact.put(member, name);
                 }
@@ -255,8 +259,7 @@ public final class Taxonomy {
                 if (need(ds + dt, avg) < need(ds, avg) + need(dt, avg)) {
                     // The bigger side keeps its name ("dusts" holding a few misc items, not "misc" holding dusts).
                     String from = ds <= dt ? small : target, into = ds <= dt ? target : small;
-                    steps.add(
-                        "merge " + from + " (" + Math.min(ds, dt) + " stacks) -> " + into + " to save a chest");
+                    steps.add("merge " + from + " (" + Math.min(ds, dt) + " stacks) -> " + into + " to save a chest");
                     b.get(into)
                         .addAll(b.remove(from));
                     done = true;

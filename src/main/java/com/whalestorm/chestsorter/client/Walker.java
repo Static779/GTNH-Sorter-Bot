@@ -106,8 +106,7 @@ public final class Walker {
             terrain = new ClientTerrain(world);
             BlockPos from = feet(p);
             double planReach = Math.max(1.5, Config.reach - PLAN_MARGIN);
-            path = PathFinder
-                .find(terrain, from, PathFinder.withinReach(target, planReach, EYE), Config.maxPathNodes);
+            path = PathFinder.find(terrain, from, PathFinder.withinReach(target, planReach, EYE), Config.maxPathNodes);
             index = 0;
             resetProgress();
             if (path == null) return fail("no walkable path from " + from + " to " + target);
@@ -177,18 +176,19 @@ public final class Walker {
     private Status nudge(EntityClientPlayerMP p, BlockPos here) {
         double dx = target.x + 0.5 - p.posX, dz = target.z + 0.5 - p.posZ;
         double h = Math.sqrt(dx * dx + dz * dz);
-        if (nudge == 0) trace.step("Path ended " + String.format(java.util.Locale.ROOT, "%.2f", h)
-            + " blocks from the chest, out of reach; stepping closer");
+        if (nudge == 0) trace.step(
+            "Path ended " + String.format(java.util.Locale.ROOT, "%.2f", h)
+                + " blocks from the chest, out of reach; stepping closer");
         boolean blocked = h < 1.2; // already next to it: walking further would walk into it
         if (!blocked) {
             double ax = p.posX + dx / h * 0.6, az = p.posZ + dz / h * 0.6;
-            blocked = !PathFinder
-                .standable(terrain, MathHelper.floor_double(ax), here.y, MathHelper.floor_double(az));
+            blocked = !PathFinder.standable(terrain, MathHelper.floor_double(ax), here.y, MathHelper.floor_double(az));
         }
         if (blocked || ++nudge > NUDGE_TICKS) {
             nudge = 0;
-            return repath(blocked ? "path ended out of reach and the way to the chest is blocked"
-                : "path ended out of reach; stepping closer did not help");
+            return repath(
+                blocked ? "path ended out of reach and the way to the chest is blocked"
+                    : "path ended out of reach; stepping closer did not help");
         }
         float yaw = (float) (Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F;
         p.rotationYaw = approach(p.rotationYaw, yaw, 50.0F);
