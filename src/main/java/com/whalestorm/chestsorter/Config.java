@@ -12,8 +12,13 @@ public class Config {
     public static void synchronizeConfiguration(File configFile) {
         Configuration configuration = new Configuration(configFile);
 
-        scanRadius = configuration
-            .getInt("scanRadius", Configuration.CATEGORY_GENERAL, scanRadius, 1, 64, "Container scan radius in blocks.");
+        scanRadius = configuration.getInt(
+            "scanRadius",
+            Configuration.CATEGORY_GENERAL,
+            scanRadius,
+            1,
+            64,
+            "Container scan radius in blocks.");
 
         if (configuration.hasChanged()) {
             configuration.save();
