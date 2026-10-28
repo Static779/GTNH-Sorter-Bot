@@ -30,7 +30,8 @@ public final class ChestPairing {
             BlockPos p = e.getKey();
             if (partners.containsKey(p)) continue;
             for (BlockPos n : neighboursInOrder(p)) {
-                if (!partners.containsKey(n) && ordered.containsKey(n) && Objects.equals(ordered.get(n), e.getValue())) {
+                if (!partners.containsKey(n) && ordered.containsKey(n)
+                    && Objects.equals(ordered.get(n), e.getValue())) {
                     partners.put(p, n);
                     partners.put(n, p);
                     break;

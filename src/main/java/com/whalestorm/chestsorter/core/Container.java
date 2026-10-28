@@ -33,6 +33,10 @@ public final class Container {
     public String toString() {
         String where = partner == null ? x + " " + y + " " + z
             : x + " " + y + " " + z + " + " + partner.x + " " + partner.y + " " + partner.z;
-        return name + " (" + slots + " slots) at " + where + String.format(java.util.Locale.ROOT, ", %.1f m", distance());
+        return name + " ("
+            + slots
+            + " slots) at "
+            + where
+            + String.format(java.util.Locale.ROOT, ", %.1f m", distance());
     }
 }
