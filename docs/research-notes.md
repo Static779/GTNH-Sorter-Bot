@@ -65,3 +65,9 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 - [Guessing] Not verifiable here: real timing on servers (settleTicks 5 may be short on laggy servers), walking over unusual GTNH blocks, and chests that change while the run is going.
 - [Certain] 2026-10-27: full sorter @ 20f7c19 builds green (compile, Spotless, Checkstyle, server run). Formatting fixes were taken from CI's own spotlessApply output after checking each file's non-whitespace content was unchanged (one file differed only by doc-comment wrapping).
 - Not yet run in game.
+
+## Speed pass (2026-10-28, from your traces)
+- [Certain] trace-20261028-001631: walking 2352 ticks, opening 1276 (13.4/chest), each stack ~10 ticks (5 settle + 3 delay).
+- [Likely] The stuck re-pathing toward -1870 60 4555 came from the feet-height calculation (floor(minY+0.01)): standing on a chest (0.875 tall) put the start node inside the chest block. Now floor(minY+0.5).
+- Server check moved from every stack to once per chest visit (before close); clicks still checked against the client view immediately.
+- [Certain] c0ab09d builds green (compile, Spotless, server run). Not yet run in game.
