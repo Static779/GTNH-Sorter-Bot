@@ -11,7 +11,8 @@ public enum SorterState {
     SURVEY,
     ASSIGN,
     PLAN,
-    EXECUTE;
+    EXECUTE,
+    VERIFY;
 
     /** Hotkey behaviour from the design doc: IDLE starts a run at SCAN, anything else stops. */
     public SorterState toggled() {

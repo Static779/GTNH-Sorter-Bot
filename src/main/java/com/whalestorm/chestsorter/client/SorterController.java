@@ -3,87 +3,131 @@ package com.whalestorm.chestsorter.client;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ChatComponentText;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 
-import com.whalestorm.chestsorter.ChestSorter;
 import com.whalestorm.chestsorter.Config;
 import com.whalestorm.chestsorter.core.Container;
-import com.whalestorm.chestsorter.core.SorterState;
+import com.whalestorm.chestsorter.core.ItemInfo;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 
-/**
- * Stage 1: the toggle key runs one container scan and lists the results in chat, then returns to IDLE.
- * No movement, no clicks, no chest opening.
- */
-public class SorterController {
+/** Owns the current run. The toggle key starts a full run or stops the current one. */
+public final class SorterController {
 
-    /** Chat lines listing individual containers; the full list always goes to the log. */
-    private static final int MAX_CHAT_LINES = 10;
+    public static final SorterController INSTANCE = new SorterController();
 
-    private SorterState state = SorterState.IDLE;
+    private final Trace trace = new Trace();
+    private Run run;
+    private String lastResult = "no run yet";
+    /** A run asked for from chat starts once the chat screen has closed. */
+    private Run.Mode pending;
+    private int pendingTicks;
+
+    private SorterController() {}
 
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
         if (KeyBindings.TOGGLE.isPressed()) {
-            setState(state.toggled());
+            if (isRunning()) stop("stopped by key");
+            else start(Run.Mode.FULL);
         }
     }
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || state == SorterState.IDLE) {
-            return;
-        }
+        if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getMinecraft();
+        if (pending != null && mc.thePlayer != null) {
+            if (mc.currentScreen == null) {
+                Run.Mode m = pending;
+                pending = null;
+                start(m);
+            } else if (++pendingTicks > 100) {
+                pending = null;
+                Trace.chat("Not starting: a screen stayed open.");
+            }
+        }
+        if (run == null) return;
         if (mc.thePlayer == null || mc.theWorld == null) {
-            // Left the world mid-run: stop without trying to chat.
-            state = SorterState.IDLE;
+            run.abort("left the world");
+            run = null;
             return;
         }
-        if (state == SorterState.SCAN) {
-            List<Container> found = ContainerScanner.scan(mc.theWorld, mc.thePlayer, Config.scanRadius);
-            report(found);
-            // Stage 1 stops here. SURVEY (opening chests) is the next stage.
-            setState(SorterState.IDLE);
+        run.tick();
+        if (run.finished()) {
+            lastResult = run.status();
+            run = null;
         }
     }
 
-    private void report(List<Container> found) {
-        ChestSorter.LOG.info("Scan within {} blocks found {} containers", Config.scanRadius, found.size());
-        for (Container c : found) {
-            ChestSorter.LOG.info("  {}", c);
+    /** For commands: chat is still open while a command runs, so start on the first tick after it closes. */
+    public void startWhenScreenCloses(Run.Mode mode) {
+        if (isRunning()) {
+            Trace.chat("Already running: " + run.status());
+            return;
         }
-        chat(
-            EnumChatFormatting.GOLD + "[Chest Sorter] "
-                + EnumChatFormatting.RESET
-                + "Found "
-                + found.size()
-                + (found.size() == 1 ? " container" : " containers")
-                + " within "
-                + Config.scanRadius
-                + " blocks.");
-        for (int i = 0; i < found.size() && i < MAX_CHAT_LINES; i++) {
-            chat(EnumChatFormatting.GRAY + "  " + found.get(i));
-        }
-        if (found.size() > MAX_CHAT_LINES) {
-            chat(EnumChatFormatting.GRAY + "  ... and " + (found.size() - MAX_CHAT_LINES) + " more (see log).");
-        }
+        pending = mode;
+        pendingTicks = 0;
     }
 
-    private void setState(SorterState next) {
-        ChestSorter.LOG.info("State {} -> {}", state, next);
-        state = next;
-        chat(EnumChatFormatting.GOLD + "[Chest Sorter] " + EnumChatFormatting.RESET + next);
+    public boolean isRunning() {
+        return run != null && !run.finished();
     }
 
-    private static void chat(String message) {
+    public void start(Run.Mode mode) {
+        if (isRunning()) {
+            Trace.chat("Already running: " + run.status());
+            return;
+        }
+        Trace.chat((mode == Run.Mode.PLAN_ONLY ? "Planning (nothing will be moved)" : "Sorting") + ". Press the key, Esc, "
+            + "or any movement key to stop.");
+        run = new Run(mode, trace);
+        if (!run.begin() || run.finished()) run = null;
+    }
+
+    public void stop(String reason) {
+        if (!isRunning()) {
+            Trace.chat("Nothing is running.");
+            return;
+        }
+        run.abort(reason);
+        run = null;
+    }
+
+    public String status() {
+        return isRunning() ? run.status() : "idle (last run: " + lastResult + ")";
+    }
+
+    /** Stage-1 style list of nearby containers, no survey. */
+    public void listContainers() {
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer != null) {
-            mc.thePlayer.addChatMessage(new ChatComponentText(message));
+        List<Container> found = ContainerScanner.scan(mc.theWorld, mc.thePlayer, Config.scanRadius);
+        Trace.chat("Found " + found.size() + " containers within " + Config.scanRadius + " blocks.");
+        for (int i = 0; i < found.size() && i < 10; i++) {
+            Trace.chat(EnumChatFormatting.GRAY + "#" + i + " " + found.get(i));
         }
+        if (found.size() > 10) Trace.chat(EnumChatFormatting.GRAY + "... and " + (found.size() - 10) + " more.");
+    }
+
+    /** Shows how the held item would be categorised. */
+    public void explainHeld() {
+        ItemStack held = Minecraft.getMinecraft().thePlayer.getHeldItem();
+        if (held == null) {
+            Trace.chat("Hold an item to see its category.");
+            return;
+        }
+        ItemKeys k = new ItemKeys();
+        int key = k.keyOf(held);
+        ItemInfo info = k.info(key);
+        Trace.chat(info.label + EnumChatFormatting.GRAY + " -> " + EnumChatFormatting.RESET + info.category);
+        Trace.chat(EnumChatFormatting.GRAY + "ore names: " + k.oreNames(key) + ", mod: " + ItemKeys.modIdOf(held)
+            + ", max stack: " + info.maxStack);
+    }
+
+    public Trace trace() {
+        return trace;
     }
 }

@@ -1,6 +1,9 @@
 package com.whalestorm.chestsorter;
 
+import net.minecraftforge.client.ClientCommandHandler;
+
 import com.whalestorm.chestsorter.client.KeyBindings;
+import com.whalestorm.chestsorter.client.SorterCommand;
 import com.whalestorm.chestsorter.client.SorterController;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -20,10 +23,10 @@ public class ClientProxy extends CommonProxy {
     public void init(FMLInitializationEvent event) {
         super.init(event);
         KeyBindings.register();
-
         // KeyInputEvent and ClientTickEvent are posted on the FML bus (FMLCommonHandler), not MinecraftForge.EVENT_BUS.
         FMLCommonHandler.instance()
             .bus()
-            .register(new SorterController());
+            .register(SorterController.INSTANCE);
+        ClientCommandHandler.instance.registerCommand(new SorterCommand());
     }
 }
