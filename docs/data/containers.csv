@@ -1,0 +1,537 @@
+jar,class,abstract,interface,superclass_chain
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityARChest,concrete,IInventory,
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityARChestLarge,concrete,IInventory,TileEntityARChest
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityGravitation,concrete,IInventory,TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityHydroponics,concrete,ISidedInventory,TileEntityOxygen > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityIsotopeGenerator,concrete,ISidedInventory,TileBaseUniversalElectricalSource > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityMothershipEngineAbstract,abstract,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityMothershipEngineBooster,concrete,ISidedInventory,TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityMothershipEngineBoosterIon,concrete,ISidedInventory,TileEntityMothershipEngineBooster > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityMothershipEngineIon,concrete,ISidedInventory,TileEntityMothershipEngineAbstract > TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityMothershipEngineJet,concrete,ISidedInventory,TileEntityMothershipEngineAbstract > TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityMothershipSettings,concrete,IInventory,TileEntityAdvanced
+AmunRa-GC-0.8.14.jar,de.katzenpapst.amunra.tile.TileEntityShuttleDock,concrete,IInventory,TileEntityAdvanced
+ArchitectureCraft-1.12.18.jar,gcewing.architecture.common.tile.TileArchitectureInventory,concrete,ISidedInventory,TileArchitecture
+ArchitectureCraft-1.12.18.jar,gcewing.architecture.common.tile.TileSawbench,concrete,ISidedInventory,TileArchitectureInventory > TileArchitecture
+AsieLib-0.7.2.jar,pl.asie.lib.block.TileEntityInventory,abstract,IInventory,TileEntityBase
+AsieLib-0.7.2.jar,pl.asie.lib.tile.TileMachine,concrete,ISidedInventory,TileEntityBase
+Avaritia-1.99.jar,fox.spiteful.avaritia.tile.TileEntityCompressor,concrete,ISidedInventory,TileLudicrous
+Avaritia-1.99.jar,fox.spiteful.avaritia.tile.TileEntityDireCrafting,concrete,ISidedInventory,TileLudicrous
+Avaritia-1.99.jar,fox.spiteful.avaritia.tile.TileEntityNeutron,concrete,IInventory,TileLudicrous
+Avaritia-1.99.jar,fox.spiteful.avaritia.tile.TileMatterClusterOpener,concrete,ISidedInventory,
+Avaritiaddons-1.9.6-GTNH.jar,wanion.avaritiaddons.block.chest.TileEntityAvaritiaddonsChest,abstract,IInventory,
+Avaritiaddons-1.9.6-GTNH.jar,wanion.avaritiaddons.block.chest.compressed.TileEntityCompressedChest,concrete,IInventory,TileEntityAvaritiaddonsChest
+Avaritiaddons-1.9.6-GTNH.jar,wanion.avaritiaddons.block.chest.infinity.TileEntityInfinityChest,concrete,IInventory,TileEntityAvaritiaddonsChest
+Avaritiaddons-1.9.6-GTNH.jar,wanion.avaritiaddons.block.extremeautocrafter.TileEntityExtremeAutoCrafter,concrete,ISidedInventory,
+BetterQuesting-3.8.89-GTNH.jar,betterquesting.blocks.TileSubmitStation,concrete,ISidedInventory,
+BloodArsenal-1.5.12.jar,com.arc.bloodarsenal.common.tileentity.TileLPMaterializer,concrete,IInventory,
+BloodArsenal-1.5.12.jar,com.arc.bloodarsenal.common.tileentity.TileLifeInfuser,concrete,IInventory,
+BloodArsenal-1.5.12.jar,com.arc.bloodarsenal.common.tileentity.TilePortableAltar,concrete,IInventory,
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.demonVillage.tileEntity.TEDemonChest,concrete,IInventory,TileEntityChest
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TEAlchemicCalcinator,concrete,IInventory,TEReagentConduit > TileSegmentedReagentHandler
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TEAltar,concrete,IInventory,TEInventory
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TECrucible,concrete,IInventory,TEInventory
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TEInventory,abstract,IInventory,
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TEPedestal,concrete,IInventory,TEInventory
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TEPlinth,concrete,IInventory,TEInventory
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TESocket,concrete,IInventory,TEInventory
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TETeleposer,concrete,IInventory,TEInventory
+BloodMagic-1.9.14.jar,WayofTime.alchemicalWizardry.common.tileEntity.TEWritingTable,concrete,ISidedInventory,TEInventory
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileAltar,concrete,ISidedInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileAvatar,concrete,ISidedInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileBrewery,concrete,ISidedInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileCraftCrate,concrete,IInventory,TileOpenCrate > TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileHourglass,concrete,IInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileIncensePlate,concrete,ISidedInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileOpenCrate,concrete,IInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileRuneAltar,concrete,ISidedInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileSimpleInventory,abstract,IInventory,TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.TileSparkChanger,concrete,IInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.corporea.TileCorporeaBase,abstract,IInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.corporea.TileCorporeaCrystalCube,concrete,IInventory,TileCorporeaBase > TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.corporea.TileCorporeaFunnel,concrete,IInventory,TileCorporeaBase > TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.corporea.TileCorporeaIndex,concrete,IInventory,TileCorporeaBase > TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.corporea.TileCorporeaInterceptor,concrete,IInventory,TileCorporeaBase > TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.mana.TilePrism,concrete,ISidedInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.mana.TileSpreader,concrete,IInventory,TileSimpleInventory > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.string.TileRedStringContainer,concrete,ISidedInventory,TileRedString > TileMod
+Botania-1.13.37-GTNH.jar,vazkii.botania.common.block.tile.string.TileRedStringDispenser,concrete,ISidedInventory,TileRedStringContainer > TileRedString > TileMod
+BotanicHorizons-1.12.10-GTNH.jar,net.fuzzycraft.botanichorizons.addons.tileentity.SimpleAutomationTileEntity,abstract,IInventory,AutomationTileEntity
+BotanicHorizons-1.12.10-GTNH.jar,net.fuzzycraft.botanichorizons.addons.tileentity.TileAdvancedAlchemyPool,concrete,IInventory,TileAdvancedManaPool > SimpleAutomationTileEntity > AutomationTileEntity
+BotanicHorizons-1.12.10-GTNH.jar,net.fuzzycraft.botanichorizons.addons.tileentity.TileAdvancedAlfPortal,concrete,IInventory,SimpleAutomationTileEntity > AutomationTileEntity
+BotanicHorizons-1.12.10-GTNH.jar,net.fuzzycraft.botanichorizons.addons.tileentity.TileAdvancedConjurationPool,concrete,IInventory,TileAdvancedManaPool > SimpleAutomationTileEntity > AutomationTileEntity
+BotanicHorizons-1.12.10-GTNH.jar,net.fuzzycraft.botanichorizons.addons.tileentity.TileAdvancedCraftingPool,concrete,IInventory,TileAdvancedManaPool > SimpleAutomationTileEntity > AutomationTileEntity
+BotanicHorizons-1.12.10-GTNH.jar,net.fuzzycraft.botanichorizons.addons.tileentity.TileAdvancedManaPool,abstract,IInventory,SimpleAutomationTileEntity > AutomationTileEntity
+CarpentersBlocks-3.7.3-GTNH.jar,com.carpentersblocks.tileentity.TECarpentersSafe,concrete,ISidedInventory,TEBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.integration.railcraft.tile.TileDigitalDetector,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.integration.railcraft.tile.TileLocomotiveRelay,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.integration.railcraft.tile.TileTicketMachine,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileCamera,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileChatBox,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileCipherBlock,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileCipherBlockAdvanced,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileColorfulLamp,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileEntityPeripheralBase,abstract,ISidedInventory,TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileIronNote,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileRadar,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileSpeaker,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileSpeechBox,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+Computronics-1.9.10-GTNH.jar,pl.asie.computronics.tile.TileTapeDrive,concrete,ISidedInventory,TileEntityPeripheralBase > TileMachine > TileEntityBase
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.BaseKitchenTileWithInventory,concrete,IInventory,
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.TileCabinet,concrete,IInventory,TileCounter > BaseKitchenTileWithInventory
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.TileCabinetCorner,concrete,IInventory,BaseKitchenTileWithInventory
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.TileCounter,concrete,IInventory,BaseKitchenTileWithInventory
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.TileCounterCorner,concrete,IInventory,BaseKitchenTileWithInventory
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.TileFridge,concrete,IInventory,BaseKitchenTileWithInventory
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.TileOven,concrete,ISidedInventory,
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.TileToaster,concrete,IInventory,
+CookingForBlockheads-1.4.14-GTNH.jar,net.blay09.mods.cookingforblockheads.tile.TileToolRack,concrete,IInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileDislocatorInhibitor,concrete,IInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileDissEnchanter,concrete,ISidedInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileDraconiumChest,concrete,ISidedInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileEnergyInfuser,concrete,ISidedInventory,TileObjectSync
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileGenerator,concrete,ISidedInventory,TileObjectSync
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileGrinder,concrete,ISidedInventory,TileObjectSync
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TilePlayerDetectorAdvanced,concrete,IInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileSunDial,concrete,IInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileTeleporterStand,concrete,IInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileUpgradeModifier,concrete,ISidedInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.TileWeatherController,concrete,IInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.multiblocktiles.TileDislocatorReceptacle,concrete,IInventory,
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.multiblocktiles.reactor.TileReactorCore,concrete,IInventory,TileObjectSync
+Draconic-Evolution-1.5.33-GTNH.jar,com.brandon3055.draconicevolution.common.tileentities.multiblocktiles.reactor.TileReactorStabilizer,concrete,ISidedInventory,
+EMT-1.7.25.jar,emt.tile.TileEntityEtherealMacerator,concrete,ISidedInventory,TileEntityEMT
+EMT-1.7.25.jar,emt.tile.TileEntityIndustrialWandRecharge,concrete,IInventory,TileEntityEMT
+EMT-1.7.25.jar,emt.tile.generator.TileEntityBaseGenerator,concrete,IInventory,TileEntityEMT
+EMT-1.7.25.jar,emt.tile.generator.TileEntityCompressedGenerator,abstract,IInventory,TileEntityBaseGenerator > TileEntityEMT
+EMT-1.7.25.jar,emt.tile.solar.TileEntitySolarBase,concrete,IInventory,TileEntityEMT
+EnderIO-2.10.48.jar,crazypants.enderio.machine.AbstractMachineEntity,abstract,ISidedInventory,TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.AbstractPowerConsumerEntity,abstract,ISidedInventory,AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.AbstractPoweredMachineEntity,abstract,ISidedInventory,AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.AbstractPoweredTaskEntity,abstract,ISidedInventory,AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.alloy.TileAlloySmelter,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.buffer.TileBuffer,concrete,ISidedInventory,AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.capbank.TileCapBank,concrete,IInventory,TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.crafter.TileCrafter,concrete,ISidedInventory,AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.crusher.TileCrusher,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.enchanter.TileEnchanter,concrete,ISidedInventory,TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.farm.TileFarmStation,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.generator.AbstractGeneratorEntity,abstract,ISidedInventory,AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.generator.combustion.TileCombustionGenerator,concrete,ISidedInventory,AbstractGeneratorEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.generator.stirling.TileEntityStirlingGenerator,concrete,ISidedInventory,AbstractGeneratorEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.generator.zombie.TileZombieGenerator,concrete,ISidedInventory,AbstractGeneratorEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.generator.zombie.TileZombieGenerator$TileEnderGenerator,concrete,ISidedInventory,TileZombieGenerator > AbstractGeneratorEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.generator.zombie.TileZombieGenerator$TileFrankenZombieGenerator,concrete,ISidedInventory,TileZombieGenerator > AbstractGeneratorEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.hypercube.TileHyperCube,concrete,ISidedInventory,TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.invpanel.TileInventoryPanel,concrete,ISidedInventory,AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.killera.TileKillerJoe,concrete,ISidedInventory,AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.monitor.TilePowerMonitor,concrete,ISidedInventory,AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.obelisk.attractor.TileAttractor,concrete,ISidedInventory,AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.obelisk.aversion.TileAversionObelisk,concrete,ISidedInventory,AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.obelisk.inhibitor.TileInhibitorObelisk,concrete,ISidedInventory,AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.obelisk.weather.TileWeatherObelisk,concrete,ISidedInventory,AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.obelisk.xp.TileExperienceObelisk,concrete,ISidedInventory,AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.painter.TileEntityPainter,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.slicensplice.TileSliceAndSplice,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.soul.TileSoulBinder,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.spawner.TilePoweredSpawner,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.tank.TileTank,concrete,ISidedInventory,AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.transceiver.TileTransceiver,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.vacuum.TileVacuumChest,concrete,IInventory,TileEntityEio > TileEntityEnder
+EnderIO-2.10.48.jar,crazypants.enderio.machine.vat.TileVat,concrete,ISidedInventory,AbstractPoweredTaskEntity > AbstractPowerConsumerEntity > AbstractPoweredMachineEntity > AbstractMachineEntity > TileEntityEio > TileEntityEnder
+EnderStorage-1.8.7.jar,codechicken.enderstorage.storage.item.TileEnderChest,concrete,IInventory,TileFrequencyOwner
+FloodLights-1.5.6.jar,de.keridos.floodlights.tileentity.TileEntityCarbonFloodlight,concrete,ISidedInventory,TileEntityMetaFloodlight > TileEntityFL
+FloodLights-1.5.6.jar,de.keridos.floodlights.tileentity.TileEntityElectricFloodlight,concrete,ISidedInventory,TileEntityFLElectric > TileEntityMetaFloodlight > TileEntityFL
+FloodLights-1.5.6.jar,de.keridos.floodlights.tileentity.TileEntityFLElectric,concrete,ISidedInventory,TileEntityMetaFloodlight > TileEntityFL
+FloodLights-1.5.6.jar,de.keridos.floodlights.tileentity.TileEntityGrowLight,concrete,ISidedInventory,TileEntityFLElectric > TileEntityMetaFloodlight > TileEntityFL
+FloodLights-1.5.6.jar,de.keridos.floodlights.tileentity.TileEntityMetaFloodlight,concrete,ISidedInventory,TileEntityFL
+FloodLights-1.5.6.jar,de.keridos.floodlights.tileentity.TileEntitySmallFloodlight,concrete,ISidedInventory,TileEntityFLElectric > TileEntityMetaFloodlight > TileEntityFL
+FloodLights-1.5.6.jar,de.keridos.floodlights.tileentity.TileEntityUVLight,concrete,ISidedInventory,TileEntityFLElectric > TileEntityMetaFloodlight > TileEntityFL
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlveary,abstract,ISidedInventory,MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlvearyClimatiser,abstract,ISidedInventory,TileAlveary > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlvearyFan,concrete,ISidedInventory,TileAlvearyClimatiser > TileAlveary > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlvearyHeater,concrete,ISidedInventory,TileAlvearyClimatiser > TileAlveary > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlvearyHygroregulator,concrete,ISidedInventory,TileAlveary > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlvearyPlain,concrete,ISidedInventory,TileAlveary > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlvearySieve,concrete,ISidedInventory,TileAlveary > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlvearyStabiliser,concrete,ISidedInventory,TileAlveary > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.multiblock.TileAlvearySwarmer,concrete,ISidedInventory,TileAlveary > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.apiculture.tiles.TileApiaristChest,concrete,ISidedInventory,TileNaturalistChest > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.apiculture.tiles.TileApiary,concrete,ISidedInventory,TileBeeHousingBase > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.apiculture.tiles.TileBeeHousingBase,abstract,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.apiculture.tiles.TileBeehouse,concrete,ISidedInventory,TileBeeHousingBase > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.arboriculture.tiles.TileArboristChest,concrete,ISidedInventory,TileNaturalistChest > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.core.multiblock.MultiblockTileEntityForestry,abstract,ISidedInventory,MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.core.tiles.TileAnalyzer,concrete,ISidedInventory,TilePowered > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.core.tiles.TileBase,abstract,ISidedInventory,TileForestry
+Forestry-4.11.39.jar,forestry.core.tiles.TileEngine,abstract,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.core.tiles.TileEscritoire,concrete,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.core.tiles.TileForestry,abstract,ISidedInventory,
+Forestry-4.11.39.jar,forestry.core.tiles.TileMill,abstract,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.core.tiles.TileNaturalistChest,abstract,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.core.tiles.TilePowered,abstract,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.energy.tiles.TileEngineBiogas,concrete,ISidedInventory,TileEngine > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.energy.tiles.TileEngineClockwork,concrete,ISidedInventory,TileEngine > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.energy.tiles.TileEngineElectric,concrete,ISidedInventory,TileEngine > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.energy.tiles.TileEnginePeat,concrete,ISidedInventory,TileEngine > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.energy.tiles.TileGenerator,concrete,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileBottler,concrete,ISidedInventory,TilePowered > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileCarpenter,concrete,ISidedInventory,TilePowered > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileCentrifuge,concrete,ISidedInventory,TilePowered > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileFabricator,concrete,ISidedInventory,TilePowered > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileFermenter,concrete,ISidedInventory,TilePowered > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileMillRainmaker,concrete,ISidedInventory,TileMill > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileMoistener,concrete,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileRaintank,concrete,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileSqueezer,concrete,ISidedInventory,TilePowered > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileStill,concrete,ISidedInventory,TilePowered > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.factory.tiles.TileWorktable,concrete,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.farming.tiles.TileFarm,abstract,ISidedInventory,MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.farming.tiles.TileFarmControl,concrete,ISidedInventory,TileFarm > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.farming.tiles.TileFarmGearbox,concrete,ISidedInventory,TileFarm > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.farming.tiles.TileFarmHatch,concrete,ISidedInventory,TileFarm > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.farming.tiles.TileFarmPlain,concrete,ISidedInventory,TileFarm > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.farming.tiles.TileFarmValve,concrete,ISidedInventory,TileFarm > MultiblockTileEntityForestry > MultiblockTileEntityBase
+Forestry-4.11.39.jar,forestry.lepidopterology.tiles.TileLepidopteristChest,concrete,ISidedInventory,TileNaturalistChest > TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.mail.tiles.TileMailbox,concrete,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.mail.tiles.TileStampCollector,concrete,ISidedInventory,TileBase > TileForestry
+Forestry-4.11.39.jar,forestry.mail.tiles.TileTrader,concrete,ISidedInventory,TileBase > TileForestry
+ForgeMultipart-1.7.16.jar,codechicken.multipart.scalatraits.JInventoryTile,concrete,ISidedInventory,TileMultipart
+GTNewHorizonsCoreMod-2.9.84.jar,com.dreammaster.modbabychest.TileEntityBabyChest,concrete,ISidedInventory,
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.energy.tile.TileBaseElectricBlockWithInventory,abstract,IInventory,TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityCargoLoader,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityCargoUnloader,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityCircuitFabricator,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityCoalGenerator,concrete,ISidedInventory,TileBaseUniversalElectricalSource > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityDish,concrete,ISidedInventory,TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityElectricFurnace,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityElectricIngotCompressor,concrete,ISidedInventory,TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityEnergyStorageModule,concrete,ISidedInventory,TileBaseUniversalElectricalSource > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityFuelLoader,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityIngotCompressor,concrete,ISidedInventory,TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityOxygenCollector,concrete,ISidedInventory,TileEntityOxygen > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityOxygenCompressor,concrete,ISidedInventory,TileEntityOxygen > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityOxygenDecompressor,concrete,ISidedInventory,TileEntityOxygen > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityOxygenDistributor,concrete,ISidedInventory,TileEntityOxygen > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityOxygenSealer,concrete,ISidedInventory,TileEntityOxygen > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityOxygenStorageModule,concrete,ISidedInventory,TileEntityOxygen > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityParaChest,concrete,IInventory,TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityRefinery,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntitySolar,concrete,ISidedInventory,TileBaseUniversalElectricalSource > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.core.tile.TileEntityTreasureChest,concrete,ISidedInventory,TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.asteroids.tile.TileEntityMinerBase,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.asteroids.tile.TileEntityShortRangeTelepad,concrete,ISidedInventory,TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.asteroids.tile.TileEntityTreasureChestAsteroids,concrete,ISidedInventory,TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.mars.tile.TileEntityElectrolyzer,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.mars.tile.TileEntityGasLiquefier,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.mars.tile.TileEntityLaunchController,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.mars.tile.TileEntityMethaneSynthesizer,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.mars.tile.TileEntityTerraformer,concrete,ISidedInventory,TileBaseElectricBlockWithInventory > TileBaseElectricBlock > TileBaseUniversalElectrical > EnergyStorageTile > TileEntityAdvanced
+Galacticraft-3.4.34-GTNH.jar,micdoodle8.mods.galacticraft.planets.mars.tile.TileEntityTreasureChestMars,concrete,ISidedInventory,TileEntityAdvanced
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityAbstractEnergyInventory,abstract,ISidedInventory,TileEntityAbstractInventory
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityAbstractInventory,abstract,ISidedInventory,
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityAbstractTable,abstract,ISidedInventory,TileEntityAbstractEnergyInventory > TileEntityAbstractInventory
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityAccumulationTable,concrete,ISidedInventory,TileEntityAbstractTable > TileEntityAbstractEnergyInventory > TileEntityAbstractInventory
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityDecompositionTable,concrete,ISidedInventory,TileEntityAbstractTable > TileEntityAbstractEnergyInventory > TileEntityAbstractInventory
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityEnhancedBrewingStand,concrete,ISidedInventory,TileEntityBrewingStand
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityExperienceTable,concrete,ISidedInventory,TileEntityAbstractTable > TileEntityAbstractEnergyInventory > TileEntityAbstractInventory
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityExtractionTable,concrete,ISidedInventory,TileEntityAbstractTable > TileEntityAbstractEnergyInventory > TileEntityAbstractInventory
+HardcoreEnderExpansion-1.12.28-GTNH.jar,chylex.hee.tileentity.TileEntityTransportBeacon,concrete,ISidedInventory,TileEntityAbstractEnergyInventory > TileEntityAbstractInventory
+IC2NuclearControl-2.7.16.jar,shedar.mods.ic2.nuclearcontrol.crossmod.RF.RFTileEntityAverageCounter,concrete,IInventory,TileEntityAverageCounter
+IC2NuclearControl-2.7.16.jar,shedar.mods.ic2.nuclearcontrol.crossmod.RF.RFTileEntityEnergyCounter,concrete,IInventory,TileEntityEnergyCounter
+IC2NuclearControl-2.7.16.jar,shedar.mods.ic2.nuclearcontrol.tileentities.TileEntityAdvancedInfoPanel,concrete,IInventory,TileEntityInfoPanel
+IC2NuclearControl-2.7.16.jar,shedar.mods.ic2.nuclearcontrol.tileentities.TileEntityAverageCounter,concrete,IInventory,
+IC2NuclearControl-2.7.16.jar,shedar.mods.ic2.nuclearcontrol.tileentities.TileEntityEnergyCounter,concrete,IInventory,
+IC2NuclearControl-2.7.16.jar,shedar.mods.ic2.nuclearcontrol.tileentities.TileEntityInfoPanel,concrete,IInventory,
+IC2NuclearControl-2.7.16.jar,shedar.mods.ic2.nuclearcontrol.tileentities.TileEntityRangeTrigger,concrete,IInventory,
+IC2NuclearControl-2.7.16.jar,shedar.mods.ic2.nuclearcontrol.tileentities.TileEntityRemoteThermo,concrete,IInventory,TileEntityThermo
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityCopperChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityCrystalChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityDarkSteelChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityDiamondChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityDirtChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityGoldChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityIronChest,concrete,IInventory,
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityNetheriteChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntityObsidianChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntitySilverChest,concrete,IInventory,TileEntityIronChest
+IronChest-6.1.13.jar,cpw.mods.ironchest.TileEntitySteelChest,concrete,IInventory,TileEntityIronChest
+JABBA-1.5.23.jar,mcp.mobius.betterbarrels.common.blocks.TileEntityBarrel,concrete,ISidedInventory,
+Mantle-0.5.4.jar,mantle.blocks.abstracts.AdaptiveInventoryLogic,abstract,IInventory,InventoryLogic
+Mantle-0.5.4.jar,mantle.blocks.abstracts.ExpandableInventoryLogic,abstract,IInventory,InventoryLogic
+Mantle-0.5.4.jar,mantle.blocks.abstracts.InventoryLogic,abstract,IInventory,
+Natura-2.8.24.jar,mods.natura.blocks.tech.NetherrackFurnaceLogic,concrete,ISidedInventory,TileEntityFurnace
+NotEnoughEnergistics-1.7.46.jar,com.github.vfyjxf.nee.block.tile.TilePatternInterface,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.AccessPoint,concrete,IInventory,Switch
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Adapter,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Assembler,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Case,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Charger,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Disassembler,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.DiskDrive,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Microcontroller,concrete,ISidedInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Printer,concrete,ISidedInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Rack,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Raid,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Relay,concrete,IInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Robot,concrete,ISidedInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.RobotProxy,concrete,ISidedInventory,
+OpenComputers-1.12.64-GTNH.jar,li.cil.oc.common.tileentity.Switch,concrete,IInventory,
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.TileEntityContainer,concrete,IInventory,TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.expander.AbstractInvExpander,abstract,IInventory,TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.expander.ExpanderInvTierFiveTileEntity,concrete,IInventory,AbstractInvExpander > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.expander.ExpanderInvTierFourTileEntity,concrete,IInventory,AbstractInvExpander > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.expander.ExpanderInvTierOneTileEntity,concrete,IInventory,AbstractInvExpander > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.expander.ExpanderInvTierThreeTileEntity,concrete,IInventory,AbstractInvExpander > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.expander.ExpanderInvTierTwoTileEntity,concrete,IInventory,AbstractInvExpander > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.turretbase.TurretBase,abstract,ISidedInventory,TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.turretbase.TurretBaseTierFiveTileEntity,concrete,ISidedInventory,TurretBase > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.turretbase.TurretBaseTierFourTileEntity,concrete,ISidedInventory,TurretBase > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.turretbase.TurretBaseTierOneTileEntity,concrete,ISidedInventory,TurretBase > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.turretbase.TurretBaseTierThreeTileEntity,concrete,ISidedInventory,TurretBase > TileEntityContainer > TileEntityOMT
+OpenModularTurrets-2.4.8.jar,openmodularturrets.tileentity.turretbase.TurretBaseTierTwoTileEntity,concrete,ISidedInventory,TurretBase > TileEntityContainer > TileEntityOMT
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileAutoCrafter,concrete,ISidedInventory,TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileBatteryBox,concrete,ISidedInventory,TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileBlockBreaker,concrete,ISidedInventory,TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileBlockPlacer,concrete,IInventory,TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileChargingBench,concrete,ISidedInventory,TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileDiamondBlockBreaker,concrete,ISidedInventory,TileBlockBreaker > TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileElectrotineGenerator,concrete,IInventory,TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileFilteredImporter,concrete,ISidedInventory,TileItemImporter > TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileInductiveFurnace,concrete,ISidedInventory,TileProcessingMachine > TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileProcessingMachine,abstract,ISidedInventory,TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.expansion.TileProjectBench,concrete,ISidedInventory,TileMachine > InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.exploration.TileBarrel,concrete,ISidedInventory,InstancedBlockTile
+ProjRed-4.12.47-GTNH.jar,mrtjp.projectred.fabrication.TileICPrinter,concrete,IInventory,TileICMachine > InstancedBlockTile
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.TileMachineItem,abstract,IInventory,TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.TileMultiBlockInventory,abstract,IInventory,TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.TileMultiBlockOven,abstract,IInventory,TileMultiBlockInventory > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.TileTank,abstract,ISidedInventory,TileMultiBlockInventory > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileAnchorAdmin,concrete,ISidedInventory,TileAnchorWorld > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileAnchorPassive,concrete,ISidedInventory,TileAnchorWorld > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileAnchorPersonal,concrete,ISidedInventory,TileAnchorWorld > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileAnchorWorld,concrete,ISidedInventory,TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileBlastFurnace,concrete,ISidedInventory,TileMultiBlockOven > TileMultiBlockInventory > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileCokeOven,concrete,ISidedInventory,TileMultiBlockOven > TileMultiBlockInventory > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileFeedStation,concrete,IInventory,TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileRockCrusher,concrete,ISidedInventory,TileMultiBlockInventory > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileRollingMachine,concrete,ISidedInventory,TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileSteamOven,concrete,ISidedInventory,TileMultiBlockInventory > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileTankWater,concrete,ISidedInventory,TileTank > TileMultiBlockInventory > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.alpha.TileTradeStation,concrete,ISidedInventory,TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.beta.TileBoilerFirebox,abstract,ISidedInventory,TileBoiler > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.beta.TileBoilerFireboxFluid,concrete,ISidedInventory,TileBoilerFirebox > TileBoiler > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.beta.TileBoilerFireboxSolid,concrete,ISidedInventory,TileBoilerFirebox > TileBoiler > TileMultiBlock > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.beta.TileChestMetals,concrete,IInventory,TileChestRailcraft > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.beta.TileChestRailcraft,abstract,IInventory,TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.beta.TileChestVoid,concrete,IInventory,TileChestRailcraft > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.beta.TileEngineSteamHobby,concrete,ISidedInventory,TileEngineSteam > TileEngine > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.epsilon.TileEngravingBench,concrete,ISidedInventory,TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileDispenserCart,concrete,IInventory,TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileDispenserTrain,concrete,IInventory,TileDispenserCart > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileEnergyLoader,concrete,ISidedInventory,TileLoaderEnergyBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileEnergyUnloader,concrete,ISidedInventory,TileLoaderEnergyBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileFluidLoader,concrete,ISidedInventory,TileLoaderFluidBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileFluidUnloader,concrete,ISidedInventory,TileLoaderFluidBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileItemLoader,concrete,ISidedInventory,TileLoaderItemBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileItemLoaderAdvanced,concrete,ISidedInventory,TileItemLoader > TileLoaderItemBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileItemUnloader,concrete,ISidedInventory,TileLoaderItemBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileItemUnloaderAdvanced,concrete,ISidedInventory,TileItemUnloader > TileLoaderItemBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileLoaderBase,abstract,IInventory,TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileLoaderEnergyBase,abstract,ISidedInventory,TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileLoaderFluidBase,abstract,ISidedInventory,TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileLoaderItemBase,abstract,ISidedInventory,TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileRFLoader,concrete,IInventory,TileRFLoaderBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileRFLoaderBase,abstract,IInventory,TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+Railcraft-9.17.31.jar,mods.railcraft.common.blocks.machine.gamma.TileRFUnloader,concrete,IInventory,TileRFLoaderBase > TileLoaderBase > TileMachineItem > TileMachineBase > RailcraftTileEntity
+RandomThings-2.7.11.jar,lumien.randomthings.TileEntities.TileEntityCreativePlayerInterface,concrete,ISidedInventory,TileEntityPlayerInterface
+RandomThings-2.7.11.jar,lumien.randomthings.TileEntities.TileEntityImbuingStation,concrete,IInventory,
+RandomThings-2.7.11.jar,lumien.randomthings.TileEntities.TileEntityPlayerInterface,concrete,ISidedInventory,
+RemoteIO-2.7.10.jar,remoteio.common.tile.TileRemoteInterface,concrete,ISidedInventory,TileIOCore > TileCore
+RemoteIO-2.7.10.jar,remoteio.common.tile.TileRemoteInventory,concrete,IInventory,TileIOCore > TileCore
+SGCraft-1.4.13-GTNH.jar,gcewing.sg.compat.oc.OCInterfaceTE,concrete,IInventory,SGInterfaceTE > BaseTileEntity
+SGCraft-1.4.13-GTNH.jar,gcewing.sg.guis.DHDTE,concrete,ISidedInventory,BaseTileInventory > BaseTileEntity
+SGCraft-1.4.13-GTNH.jar,gcewing.sg.tileentities.BaseTileInventory,concrete,ISidedInventory,BaseTileEntity
+SGCraft-1.4.13-GTNH.jar,gcewing.sg.tileentities.SGBaseTE,concrete,ISidedInventory,BaseTileInventory > BaseTileEntity
+StevesCarts-2.3.15.jar,vswe.stevescarts.TileEntities.TileEntityCargo,concrete,IInventory,TileEntityManager > TileEntityBase
+StevesCarts-2.3.15.jar,vswe.stevescarts.TileEntities.TileEntityCartAssembler,concrete,ISidedInventory,TileEntityBase
+StevesCarts-2.3.15.jar,vswe.stevescarts.TileEntities.TileEntityDistributor,concrete,ISidedInventory,TileEntityBase
+StevesCarts-2.3.15.jar,vswe.stevescarts.TileEntities.TileEntityLiquid,concrete,ISidedInventory,TileEntityManager > TileEntityBase
+StevesCarts-2.3.15.jar,vswe.stevescarts.TileEntities.TileEntityManager,abstract,IInventory,TileEntityBase
+StevesCarts-2.3.15.jar,vswe.stevescarts.TileEntities.TileEntityUpgrade,concrete,ISidedInventory,TileEntityBase
+StevesFactoryManager-1.3.13-GTNH.jar,vswe.stevesfactory.blocks.TileEntityBreaker,concrete,IInventory,TileEntityClusterElement
+StevesFactoryManager-1.3.13-GTNH.jar,vswe.stevesfactory.blocks.TileEntityCreative,concrete,IInventory,TileEntityClusterElement
+StevesFactoryManager-1.3.13-GTNH.jar,vswe.stevesfactory.blocks.TileEntityIntake,concrete,IInventory,TileEntityClusterElement
+StevesFactoryManager-1.3.13-GTNH.jar,vswe.stevesfactory.blocks.TileEntityRelay,concrete,ISidedInventory,TileEntityClusterElement
+StorageDrawers-2.2.31-GTNH.jar,com.jaquadro.minecraft.storagedrawers.block.tile.TileEntityController,concrete,ISidedInventory,
+StorageDrawers-2.2.31-GTNH.jar,com.jaquadro.minecraft.storagedrawers.block.tile.TileEntityDrawers,abstract,ISidedInventory,BaseTileEntity
+StorageDrawers-2.2.31-GTNH.jar,com.jaquadro.minecraft.storagedrawers.block.tile.TileEntityDrawersComp,concrete,ISidedInventory,TileEntityDrawers > BaseTileEntity
+StorageDrawers-2.2.31-GTNH.jar,com.jaquadro.minecraft.storagedrawers.block.tile.TileEntityDrawersStandard,concrete,ISidedInventory,TileEntityDrawers > BaseTileEntity
+StorageDrawers-2.2.31-GTNH.jar,com.jaquadro.minecraft.storagedrawers.block.tile.TileEntityFramingTable,concrete,IInventory,
+StorageDrawers-2.2.31-GTNH.jar,com.jaquadro.minecraft.storagedrawers.block.tile.TileEntitySlave,concrete,ISidedInventory,
+StorageDrawers-2.2.31-GTNH.jar,com.jaquadro.minecraft.storagedrawers.integration.refinedrelocation.TileSortingDrawersComp,concrete,ISidedInventory,TileEntityDrawersComp > TileEntityDrawers > BaseTileEntity
+StorageDrawers-2.2.31-GTNH.jar,com.jaquadro.minecraft.storagedrawers.integration.refinedrelocation.TileSortingDrawersStandard,concrete,ISidedInventory,TileEntityDrawersStandard > TileEntityDrawers > BaseTileEntity
+TConstruct-1.14.118-GTNH.jar,tconstruct.blocks.logic.DryingRackLogic,concrete,IInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.mechworks.logic.TileEntityLandmine,concrete,IInventory,
+TConstruct-1.14.118-GTNH.jar,tconstruct.smeltery.logic.CastingBasinLogic,concrete,ISidedInventory,CastingBlockLogic > InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.smeltery.logic.CastingBlockLogic,abstract,ISidedInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.smeltery.logic.CastingTableLogic,concrete,ISidedInventory,CastingBlockLogic > InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.smeltery.logic.SmelteryLogic,concrete,IInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.BattlesignLogic,concrete,IInventory,EquipLogic > InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.CraftingStationLogic,concrete,ISidedInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.EquipLogic,abstract,IInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.FrypanLogic,concrete,IInventory,EquipLogic > InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.FurnaceLogic,concrete,ISidedInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.PartBuilderLogic,concrete,ISidedInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.PartChestLogic,concrete,IInventory,TiCChestLogic > InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.PatternChestLogic,concrete,IInventory,TiCChestLogic > InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.StencilTableLogic,concrete,ISidedInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.TiCChestLogic,abstract,IInventory,InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.ToolForgeLogic,concrete,ISidedInventory,ToolStationLogic > InventoryLogic
+TConstruct-1.14.118-GTNH.jar,tconstruct.tools.logic.ToolStationLogic,concrete,ISidedInventory,InventoryLogic
+TMechworks-0.4.2.jar,tmechworks.blocks.logic.AdvancedDrawbridgeLogic,concrete,IInventory,InventoryLogic
+TMechworks-0.4.2.jar,tmechworks.blocks.logic.DrawbridgeLogic,concrete,IInventory,InventoryLogic
+TMechworks-0.4.2.jar,tmechworks.blocks.logic.FilterLogic,concrete,ISidedInventory,
+Thaumic-Based-1.9.19.jar,tb.common.tile.TileOverchanter,concrete,ISidedInventory,
+Thaumic-Exploration-1.5.29-GTNH.jar,flaxbeard.thaumicexploration.tile.TileEntityAutoCrafter,concrete,IInventory,
+Thaumic-Exploration-1.5.29-GTNH.jar,flaxbeard.thaumicexploration.tile.TileEntityAutoSorter,concrete,IInventory,
+Thaumic-Exploration-1.5.29-GTNH.jar,flaxbeard.thaumicexploration.tile.TileEntityBoundChest,concrete,IInventory,
+Thaumic-Exploration-1.5.29-GTNH.jar,flaxbeard.thaumicexploration.tile.TileEntityReplicator,concrete,ISidedInventory,
+Thaumic-Exploration-1.5.29-GTNH.jar,flaxbeard.thaumicexploration.tile.TileEntityThinkTank,concrete,ISidedInventory,
+ThaumicMachina-0.2.6-GTNH.jar,jcm2606.thaumicmachina.tile.TileNodeTransmodifier,concrete,IInventory,TMTileEntity
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.TileAspectAnalyzer,concrete,IInventory,
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.TileEnchanter,concrete,ISidedInventory,
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.TileFunnel,concrete,ISidedInventory,
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.TileMobMagnet,concrete,IInventory,TileMagnet
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.TileRPlacer,concrete,IInventory,TileCamo
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.TileRepairer,concrete,ISidedInventory,
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.kami.TileWarpGate,concrete,IInventory,
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.tablet.TileAnimationTablet,concrete,IInventory,
+ThaumicTinkerer-2.12.33.jar,thaumic.tinkerer.common.block.tile.transvector.TileTransvectorInterface,concrete,ISidedInventory,TileTransvector > TileCamo
+TwilightForest-2.7.44.jar,twilightforest.tileentity.TileEntityTFChest,concrete,IInventory,TileEntityChest
+TwilightForest-2.7.44.jar,twilightforest.tileentity.TileEntityTFCinderFurnace,concrete,ISidedInventory,
+WitcheryExtras-1.4.20.jar,alkalus.main.mixins.late.witchery.TileEntityWitchesOvenMixin,abstract,ISidedInventory,
+WitchingGadgets-1.8.51-GTNH.jar,witchinggadgets.common.blocks.tiles.TileEntityCuttingTable,concrete,IInventory,TileEntityWGBase
+WitchingGadgets-1.8.51-GTNH.jar,witchinggadgets.common.blocks.tiles.TileEntityLabelLibrary,concrete,IInventory,TileEntityWGBase
+WitchingGadgets-1.8.51-GTNH.jar,witchinggadgets.common.blocks.tiles.TileEntitySpinningWheel,concrete,ISidedInventory,TileEntityWGBase
+adventurebackpack-1.4.26-GTNH.jar,com.darkona.adventurebackpack.block.TileAdventure,abstract,IInventory,
+adventurebackpack-1.4.26-GTNH.jar,com.darkona.adventurebackpack.block.TileAdventureBackpack,concrete,ISidedInventory,TileAdventure
+ae2fc-1.5.113-gtnh.jar,com.glodblock.github.common.tile.TileFluidAutoFiller,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+ae2fc-1.5.113-gtnh.jar,com.glodblock.github.common.tile.TileFluidInterface,concrete,ISidedInventory,TileInterface > AENetworkInvTile > AEBaseInvTile > AEBaseTile
+ae2fc-1.5.113-gtnh.jar,com.glodblock.github.common.tile.TileFluidPacketDecoder,concrete,IInventory,AENetworkTile > AEBaseTile
+ae2fc-1.5.113-gtnh.jar,com.glodblock.github.common.tile.TileIngredientBuffer,concrete,ISidedInventory,AEBaseInvTile > AEBaseTile
+ae2fc-1.5.113-gtnh.jar,com.glodblock.github.common.tile.TileLargeIngredientBuffer,concrete,ISidedInventory,TileIngredientBuffer > AEBaseInvTile > AEBaseTile
+ae2fc-1.5.113-gtnh.jar,com.glodblock.github.common.tile.TileOCPatternEditor,concrete,ISidedInventory,AEBaseInvTile > AEBaseTile
+ae2fc-1.5.113-gtnh.jar,com.glodblock.github.common.tile.TileSuperStockReplenisher,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+alchgrate-1.3.2-GTNH.jar,com.technicianlp.chestgrate.TileChestGrate,concrete,IInventory,
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.debug.TileItemGen,concrete,IInventory,AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.parts.layers.LayerISidedInventory,concrete,ISidedInventory,LayerBase
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.AEBaseInvTile,abstract,ISidedInventory,AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.crafting.TileMolecularAssembler,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.grid.AENetworkInvTile,abstract,ISidedInventory,AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.grid.AENetworkPowerTile,abstract,ISidedInventory,AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.grindstone.TileGrinder,concrete,ISidedInventory,AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.misc.TileAdvancedInscriber,concrete,ISidedInventory,AENetworkPowerTile > AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.misc.TileCharger,concrete,ISidedInventory,AENetworkPowerTile > AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.misc.TileCondenser,concrete,ISidedInventory,AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.misc.TileCrystalGrowthChamber,concrete,ISidedInventory,AENetworkPowerTile > AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.misc.TileInscriber,concrete,ISidedInventory,AENetworkPowerTile > AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.misc.TileInterface,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.misc.TileVibrationChamber,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.networking.TileController,concrete,ISidedInventory,AENetworkPowerTile > AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.networking.TileCreativeEnergyController,concrete,ISidedInventory,TileController > AENetworkPowerTile > AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.networking.TileEnergyAcceptor,concrete,ISidedInventory,AENetworkPowerTile > AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.networking.TileWireless,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.powersink.AEBasePoweredTile,abstract,ISidedInventory,MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.powersink.AERootPoweredTile,abstract,ISidedInventory,AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.powersink.GTPowerSink,abstract,ISidedInventory,AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.powersink.IC2,abstract,ISidedInventory,GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.powersink.MekJoules,abstract,ISidedInventory,RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.powersink.RedstoneFlux,abstract,ISidedInventory,RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.powersink.RotaryCraft,abstract,ISidedInventory,IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.qnb.TileQuantumBridge,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.spatial.TileSpatialIOPort,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.spatial.TileSpatialLinkChamber,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.storage.TileChest,concrete,ISidedInventory,AENetworkPowerTile > AEBasePoweredTile > MekJoules > RedstoneFlux > RotaryCraft > IC2 > GTPowerSink > AERootPoweredTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.storage.TileDrive,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.storage.TileIOPort,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+appliedenergistics2-rv3-beta-1080-GTNH.jar,appeng.tile.storage.TileSkyChest,concrete,ISidedInventory,AEBaseInvTile > AEBaseTile
+bdlib-1.11.0-GTNH.jar,net.bdew.lib.power.TileBaseProcessor,abstract,ISidedInventory,TileExtended
+bdlib-1.11.0-GTNH.jar,net.bdew.lib.power.TileItemProcessor,abstract,ISidedInventory,TileBaseProcessor > TileExtended
+binnie-mods-2.6.48.jar,binnie.core.machines.TileEntityMachine,concrete,ISidedInventory,TileEntityMachineBase
+binnie-mods-2.6.48.jar,binnie.core.machines.base.TileEntityMachineBase,concrete,ISidedInventory,
+binnie-mods-2.6.48.jar,binnie.extrabees.apiary.TileExtraBeeAlveary,concrete,ISidedInventory,TileEntityMachine > TileEntityMachineBase
+buildcraft-7.1.64.jar,buildcraft.builders.TileArchitect,concrete,IInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.builders.TileBlueprintLibrary,concrete,IInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.builders.TileBuilder,concrete,IInventory,TileAbstractBuilder > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.builders.TileFiller,concrete,IInventory,TileAbstractBuilder > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.builders.TileQuarry,concrete,ISidedInventory,TileAbstractBuilder > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.core.builders.TileAbstractBuilder,abstract,IInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.core.lib.engines.TileEngineWithInventory,abstract,ISidedInventory,TileEngineBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.energy.TileEngineIron,concrete,ISidedInventory,TileEngineWithInventory > TileEngineBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.energy.TileEngineStone,concrete,ISidedInventory,TileEngineWithInventory > TileEngineBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.factory.TileAutoWorkbench,concrete,ISidedInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.factory.TileHopper,concrete,IInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.robotics.TileRequester,concrete,IInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.robotics.TileZonePlan,concrete,IInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.silicon.TileAdvancedCraftingTable,concrete,ISidedInventory,TileLaserTableBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.silicon.TileAssemblyTable,concrete,IInventory,TileLaserTableBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.silicon.TileChargingTable,concrete,IInventory,TileLaserTableBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.silicon.TileIntegrationTable,concrete,ISidedInventory,TileLaserTableBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.silicon.TileLaserTableBase,abstract,IInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.silicon.TilePackager,concrete,ISidedInventory,TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.silicon.TileProgrammingTable,concrete,ISidedInventory,TileLaserTableBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.silicon.TileStampingTable,concrete,ISidedInventory,TileLaserTableBase > TileBuildCraft
+buildcraft-7.1.64.jar,buildcraft.transport.TileFilteredBuffer,concrete,IInventory,TileBuildCraft
+buildcraft-compat-7.1.22.jar,buildcraft.builders.TileQuarryCompat,concrete,ISidedInventory,TileQuarry > TileAbstractBuilder > TileBuildCraft
+chisel-2.17.34-GTNH.jar,team.chisel.block.tileentity.TileEntityAutoChisel,concrete,ISidedInventory,
+chisel-2.17.34-GTNH.jar,team.chisel.block.tileentity.TileEntityCarvableBeacon,concrete,IInventory,TileEntityBeacon
+chisel-2.17.34-GTNH.jar,team.chisel.block.tileentity.TileEntityPresent,concrete,IInventory,
+etfuturum-2.6.60-GTNH.jar,ganymedes01.etfuturum.tileentities.TileEntityBarrel,concrete,IInventory,
+etfuturum-2.6.60-GTNH.jar,ganymedes01.etfuturum.tileentities.TileEntityBlastFurnace,concrete,ISidedInventory,
+etfuturum-2.6.60-GTNH.jar,ganymedes01.etfuturum.tileentities.TileEntityNewBeacon,concrete,IInventory,TileEntityBeacon
+etfuturum-2.6.60-GTNH.jar,ganymedes01.etfuturum.tileentities.TileEntityNewBrewingStand,concrete,ISidedInventory,TileEntityBrewingStand
+etfuturum-2.6.60-GTNH.jar,ganymedes01.etfuturum.tileentities.TileEntityShulkerBox,concrete,IInventory,
+etfuturum-2.6.60-GTNH.jar,ganymedes01.etfuturum.tileentities.TileEntitySmoker,concrete,ISidedInventory,
+etfuturum-2.6.60-GTNH.jar,ganymedes01.etfuturum.tileentities.fake.TileEntityFakeInventory,concrete,ISidedInventory,
+gadomancy-1.5.17.jar,makeo.gadomancy.common.blocks.tiles.TileArcaneDropper,concrete,ISidedInventory,
+gadomancy-1.5.17.jar,makeo.gadomancy.common.blocks.tiles.TileArcaneHand,concrete,ISidedInventory,SynchronizedTileEntity
+gadomancy-1.5.17.jar,makeo.gadomancy.common.blocks.tiles.TileInfusionClaw,concrete,ISidedInventory,SynchronizedTileEntity
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.advmutatron.TileMutatronAdv,concrete,ISidedInventory,TileItemProcessor > TileBaseProcessor > TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.apiary.TileApiary,concrete,ISidedInventory,TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.extractor.TileExtractor,concrete,ISidedInventory,TileBaseProcessor > TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.imprinter.TileImprinter,concrete,ISidedInventory,TileItemProcessor > TileBaseProcessor > TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.liquifier.TileLiquifier,concrete,ISidedInventory,TileBaseProcessor > TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.mproducer.TileMutagenProducer,concrete,ISidedInventory,TileBaseProcessor > TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.mutatron.TileMutatron,concrete,ISidedInventory,TileItemProcessor > TileBaseProcessor > TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.replicator.TileReplicator,concrete,ISidedInventory,TileItemProcessor > TileBaseProcessor > TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.sampler.TileSampler,concrete,ISidedInventory,TileItemProcessor > TileBaseProcessor > TileExtended
+gendustry-1.9.13-GTNH.jar,net.bdew.gendustry.machines.transposer.TileTransposer,concrete,ISidedInventory,TileItemProcessor > TileBaseProcessor > TileExtended
+gregtech-5.09.54.205.jar,bartworks.common.tileentities.classic.TileEntityHeatedWaterPump,concrete,ISidedInventory,
+gregtech-5.09.54.205.jar,bwcrossmod.openComputers.TileEntityGTDataServer,concrete,ISidedInventory,
+gregtech-5.09.54.205.jar,gregtech.api.metatileentity.BaseMetaPipeEntity,concrete,ISidedInventory,CommonBaseMetaTileEntity > CoverableTileEntity > BaseTileEntity
+gregtech-5.09.54.205.jar,gregtech.api.metatileentity.BaseMetaTileEntity,concrete,ISidedInventory,CommonBaseMetaTileEntity > CoverableTileEntity > BaseTileEntity
+gregtech-5.09.54.205.jar,gregtech.api.metatileentity.CommonBaseMetaTileEntity,abstract,ISidedInventory,CoverableTileEntity > BaseTileEntity
+gregtech-5.09.54.205.jar,gregtech.api.metatileentity.CoverableTileEntity,abstract,ISidedInventory,BaseTileEntity
+gregtech-5.09.54.205.jar,gtPlusPlus.core.tileentities.general.TileEntityCircuitProgrammer,concrete,ISidedInventory,
+gregtech-5.09.54.205.jar,gtPlusPlus.core.tileentities.general.TileEntityDecayablesChest,concrete,ISidedInventory,
+gregtech-5.09.54.205.jar,gtPlusPlus.core.tileentities.general.TileEntityFishTrap,concrete,ISidedInventory,
+gregtech-5.09.54.205.jar,gtPlusPlus.core.tileentities.general.TileEntityVolumetricFlaskSetter,concrete,ISidedInventory,
+gregtech-5.09.54.205.jar,kubatech.tileentity.TeaAcceptorTile,concrete,IInventory,
+hodgepodge-2.7.215.jar,com.mitchej123.hodgepodge.mixins.late.railcraft.MixinTileAnchorPassive,concrete,ISidedInventory,TileAnchorWorld > TileMachineItem > TileMachineBase > RailcraftTileEntity
+hodgepodge-2.7.215.jar,com.mitchej123.hodgepodge.mixins.late.railcraft.MixinTileAnchorPersonal,concrete,ISidedInventory,TileAnchorWorld > TileMachineItem > TileMachineBase > RailcraftTileEntity
+logisticspipes-1.5.36-GTNH.jar,logisticspipes.blocks.LogisticsSolderingTileEntity,concrete,ISidedInventory,LogisticsSolidTileEntity
+logisticspipes-1.5.36-GTNH.jar,logisticspipes.blocks.crafting.LogisticsCraftingTableTileEntity,concrete,IInventory,LogisticsSolidTileEntity
+magicbees-2.10.12-GTNH.jar,magicbees.tileentity.TileEntityEffectJar,concrete,IInventory,
+magicbees-2.10.12-GTNH.jar,magicbees.tileentity.TileEntityMagicApiary,concrete,ISidedInventory,
+openprinter-0.3.1-GTNH.jar,pcl.openprinter.tileentity.FileCabinetTE,concrete,ISidedInventory,
+openprinter-0.3.1-GTNH.jar,pcl.openprinter.tileentity.PrinterTE,concrete,ISidedInventory,
+openprinter-0.3.1-GTNH.jar,pcl.openprinter.tileentity.ShredderTE,concrete,ISidedInventory,
+opensecurity-1.2.2-GTNH.jar,pcl.opensecurity.drivers.RackRaidDriver,concrete,IInventory,Raid
+opensecurity-1.2.2-GTNH.jar,pcl.opensecurity.tileentity.TileEntityCardWriter,concrete,ISidedInventory,TileEntityMachineBase
+opensecurity-1.2.2-GTNH.jar,pcl.opensecurity.tileentity.TileEntityEnergyTurret,concrete,IInventory,TileEntityMachineBase
+thaumicenergistics-1.7.64-GTNH.jar,thaumicenergistics.common.tiles.TileArcaneAssembler,concrete,ISidedInventory,AENetworkInvTile > AEBaseInvTile > AEBaseTile
+thaumicenergistics-1.7.64-GTNH.jar,thaumicenergistics.common.tiles.TileDistillationPatternEncoder,concrete,ISidedInventory,ThETileInventory
+thaumicenergistics-1.7.64-GTNH.jar,thaumicenergistics.common.tiles.TileKnowledgeInscriber,concrete,IInventory,ThETileInventory
+thaumicenergistics-1.7.64-GTNH.jar,thaumicenergistics.common.tiles.abstraction.ThETileInventory,abstract,IInventory,
+tinkersdefense-1.3.4.jar,gmail.Lance5057.tileentities.TileEntity_CrestMount,concrete,IInventory,
