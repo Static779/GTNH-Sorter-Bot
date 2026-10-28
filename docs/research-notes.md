@@ -11,23 +11,28 @@ Tags: [Certain] = checked against a file or source listed here. [Likely] = stron
 ## Build toolchain
 - [Certain] GTNH ExampleMod starter (2026-10-26): Gradle wrapper 9.7.1, `gtnhsettingsconvention` plugin 2.0.33, daemon JVM 25 (auto-downloaded via foojay), Jabel (modern syntax, Java 8 bytecode).
 - [Certain] Spotless formatting is enforced unless `disableSpotless = true` (GTNHGradle 2.0.33 `CodeStyleModule`). Run `./gradlew spotlessApply` before `build`.
-- [Certain] Dependency coordinates are `com.github.GTNewHorizons:<repo>:<version>:dev`. Exact RC-2 versions of ironchest, StorageDrawers, NotEnoughItems, GTNHLib and InventoryBogoSorter are already referenced by other GTNH mods' build files, so those artifacts exist.
+- [Certain] Dependency coordinates are `com.github.GTNewHorizons:<repo>:<version>:dev`. The exact RC-2 versions are referenced in other GTNH mods' `dependencies.gradle`: ironchest 6.1.13 (InventoryBogoSorter), StorageDrawers 2.2.31-GTNH (GT5U), NotEnoughItems 2.8.155-GTNH (AE2, GT5U, lwjgl3ify), GTNHLib 0.11.52 (AE2, GT5U), InventoryBogoSorter 1.3.54-GTNH (AE2).
+- [Likely] So those artifacts resolve from GTNH's Maven. Not tested yet: all are commented out in our `dependencies.gradle`.
 
 ## Layer 1: which blocks count as containers
 Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/containers.csv`, `docs/data/summary.txt`.
 - [Certain] 536 TileEntity classes implement IInventory (464 concrete) across 68 jars.
-- [Certain] **Every GregTech machine and pipe** is `gregtech.api.metatileentity.BaseMetaTileEntity` / `BaseMetaPipeEntity`, which implements `ISidedInventory`. "Implements IInventory" would therefore treat every GT machine as a chest. → `is_container()` must be an **allow-list**, with GT Super/Quantum Chests handled through the MetaTileEntity inside the base class. [Guessing] how to identify those from the client; needs a look in GT5U source (`refs/src/GT5-Unofficial`).
+- [Certain] GT's machine block creates its tile entity through `GregTechAPI.createTileEntity(meta)` (`BlockMachines.java:681`), which gives a `BaseMetaTileEntity` (machines) or `BaseMetaPipeEntity` (pipes). Both implement `ISidedInventory`. "Implements IInventory" would therefore treat GT machines and pipes as chests. → `is_container()` must be an **allow-list**.
+- [Certain] GT Super/Quantum Chests are `MTESuperChest` / `MTEQuantumChest` (both under `gregtech/common/tileentities/storage/`, base `MTEDigitalChestBase`), held inside a `BaseMetaTileEntity`. [Guessing] how the client reads which MetaTileEntity a base holds; not researched yet.
+- [Certain] Bartworks, GT++ and kubatech (bundled in the same jar) add 7 more inventory tile entities of their own; see `containers.csv`.
 - [Certain] Iron Chests: 11 chest classes (Iron, Gold, Diamond, Copper, Silver, Crystal, Obsidian, Dirt, Steel, Dark Steel, Netherite).
-- [Certain] Storage Drawers, JABBA barrels, AE2 parts are ISidedInventory with non-chest semantics (one item type per slot). Exclude in early stages.
+- [Certain] Storage Drawers and JABBA barrels implement ISidedInventory (scan). [Likely] Their slots don't behave like chest slots (each drawer/barrel holds one item type in bulk), so they stay off the allow-list for now.
 - [Certain] Hodgepodge shows 2 hits that are mixin classes, not real tile entities: the scan has some false positives.
 - [Likely] Vanilla chest hierarchy in the scan is seeded by hand (Minecraft's jar isn't available here); only matters for mods extending vanilla classes.
 - Not scanned (jar not downloadable here): 30 CurseForge/external mods incl. BiblioCraft, Thaumcraft, Extra Utilities, IC2, Witchery; 4 GTNH repos that return 404 publicly (Catwalks-2, Galaxy-Space-GTNH, harvestcraft, Automagy-GTNH). List: `docs/data/rc2-jars-not-downloaded.tsv`.
 
 ## Layer 2 / 7: reading and clicking modded chest GUIs
-- [Certain] InventoryBogoSorter's `compat/DefaultCompat.java` declares, per Container class, which slot range is the chest (start index, count, row width) for ~30 mods, plus a mixin for Iron Chest containers (`mixins/late/ironchests/MixinIronChestContainer.java`). This is the best existing map for "read_all_slots(open_gui)".
+- [Certain] InventoryBogoSorter's `compat/DefaultCompat.java` declares, per Container class, which slot range is the chest (start index, count, row width): vanilla containers plus 28 mod-guarded blocks. This is the best existing map for "read_all_slots(open_gui)".
+- [Certain] Iron Chests: its mixin (`mixins/late/ironchests/MixinIronChestContainer.java`) treats slots 0 to rows × row length as the chest, row width = the tier's row length, and skips the Dirt chest.
 
 ## Layer 6: walking
-- [Certain] No 1.7.10 Baritone. Baritone v1.2.19 (1.12.2) is cloned in `refs/src/baritone-v1.2.19` for its pathing design (`src/main/java/baritone/pathing`). Code can't be copied as-is (1.12.2 APIs differ); its LGPL-3.0 license matches ours, so adapted parts are allowed with credit.
+- [Likely] No 1.7.10 port of Baritone exists. Baritone v1.2.19 (1.12.2) is cloned in `refs/src/baritone-v1.2.19` for its pathing design (`src/main/java/baritone/pathing`).
+- [Certain] Baritone's license is not plain LGPL-3.0: its README calls it "LGPL-3.0 with anime exception", and `LICENSE-Part-2.jpg` is a "No anime" image. [Guessing] what that extra term means legally. → Use Baritone as a design reference only; don't copy its code.
 
 ## Not verified yet
 - [Likely] Forge reference source is the MinecraftForge `1.7.10` branch head; exact build number not confirmed as 1614. The real decompiled source comes from `./gradlew setupDecompWorkspace` on your PC.
