@@ -111,8 +111,8 @@ public final class WhatIf {
      * Rows for 0 extra chests and each of {@code extras}. The chests are not changed. Throws nothing for an empty
      * room; returns an empty list.
      */
-    public static List<Row> evaluate(List<ChestModel> chests, Map<Integer, ItemInfo> items, Settings s,
-        BlockPos start, int[] extras) {
+    public static List<Row> evaluate(List<ChestModel> chests, Map<Integer, ItemInfo> items, Settings s, BlockPos start,
+        int[] extras) {
         List<Row> rows = new ArrayList<>();
         if (chests.isEmpty()) return rows;
         rows.add(measure(chests, items, s, start, 0));

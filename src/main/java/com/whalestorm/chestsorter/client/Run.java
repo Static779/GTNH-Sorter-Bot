@@ -859,10 +859,9 @@ public final class Run {
             trace.log("  " + e.getKey() + ": " + n + " stacks in " + e.getValue() + " slots, " + free + " free");
             if (free < Math.max(1, e.getValue() / 10)) tight.add(e.getKey() + " (" + free + " free)");
         }
-        if (!tight.isEmpty())
-            trace.warn(
-                "Nearly full after sorting: " + tight
-                    + ". More chests would leave room to grow (/cs whatif shows how many).");
+        if (!tight.isEmpty()) trace.warn(
+            "Nearly full after sorting: " + tight
+                + ". More chests would leave room to grow (/cs whatif shows how many).");
     }
 
     /** Prints the extra-chest comparison: one line per row, then the verdict. */
