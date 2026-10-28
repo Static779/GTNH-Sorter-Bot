@@ -220,7 +220,8 @@ public final class Run {
         if (Config.localRead && LocalChests.available()) {
             steps.add(new LocalSurvey());
         } else {
-            trace.log("Survey: opening each chest (" + (Config.localRead ? "not singleplayer" : "localRead is off") + ")");
+            trace.log(
+                "Survey: opening each chest (" + (Config.localRead ? "not singleplayer" : "localRead is off") + ")");
             queueOpenSurvey(nearestFirstOrder(Walker.feet(p)));
         }
         return true;
@@ -297,13 +298,19 @@ public final class Run {
                 recordSurvey(id, m, "read in " + (ticks + 1) + " ticks");
             }
             if (!missing.isEmpty()) {
-                trace.info("Singleplayer read covered " + (containers.size() - missing.size()) + " of "
-                    + containers.size() + " chests; opening the other " + missing.size() + ".");
+                trace.info(
+                    "Singleplayer read covered " + (containers.size() - missing.size())
+                        + " of "
+                        + containers.size()
+                        + " chests; opening the other "
+                        + missing.size()
+                        + ".");
                 List<Integer> order = new ArrayList<>();
                 for (int id : nearestFirstOrder(Walker.feet(mc.thePlayer))) if (missing.contains(id)) order.add(id);
                 queueOpenSurvey(order);
             } else {
-                trace.info("Read all " + containers.size() + " chests from the singleplayer world without opening them.");
+                trace.info(
+                    "Read all " + containers.size() + " chests from the singleplayer world without opening them.");
             }
             return Outcome.DONE;
         }
@@ -633,14 +640,19 @@ public final class Run {
             trace.log("  " + e.getKey() + ": " + n + " stacks in " + e.getValue() + " slots, " + free + " free");
             if (free < Math.max(1, e.getValue() / 10)) tight.add(e.getKey() + " (" + free + " free)");
         }
-        if (!tight.isEmpty()) trace.warn("Nearly full after sorting: " + tight + ". More chests would leave room to grow.");
+        if (!tight.isEmpty())
+            trace.warn("Nearly full after sorting: " + tight + ". More chests would leave room to grow.");
     }
 
     private boolean allCombined() {
         if (!Config.combineStacks) return true;
         for (Map.Entry<Integer, ChestModel> e : survey.entrySet()) {
             if (combined.contains(e.getKey())) continue;
-            if (!Combiner.combine(e.getValue().copy(), keys.infos()).isEmpty()) return false;
+            if (!Combiner.combine(
+                e.getValue()
+                    .copy(),
+                keys.infos())
+                .isEmpty()) return false;
         }
         return true;
     }
@@ -652,7 +664,8 @@ public final class Run {
         for (int id : nearestFirstOrder(Walker.feet(mc.thePlayer))) {
             ChestModel m = survey.get(id);
             if (m == null || combined.contains(id) || unreachable.contains(id)) continue;
-            if (!Combiner.combine(m.copy(), keys.infos()).isEmpty()) todo.add(id);
+            if (!Combiner.combine(m.copy(), keys.infos())
+                .isEmpty()) todo.add(id);
         }
         if (todo.isEmpty()) return false;
         trace.info("Combining partial stacks in " + todo.size() + " chests no trip opened.");
@@ -1277,8 +1290,17 @@ public final class Run {
             if (p.inventory.getItemStack() != null) return fail("cursor not empty before combining");
             if (keys.keyOf(fs) != op.key || keys.keyOf(ts) != op.key) {
                 return fail(
-                    "chest #" + id + " slots " + op.from + "/" + op.to + " hold " + GuiOps.describe(fs, keys) + " / "
-                        + GuiOps.describe(ts, keys) + ", expected " + keys.label(op.key));
+                    "chest #" + id
+                        + " slots "
+                        + op.from
+                        + "/"
+                        + op.to
+                        + " hold "
+                        + GuiOps.describe(fs, keys)
+                        + " / "
+                        + GuiOps.describe(ts, keys)
+                        + ", expected "
+                        + keys.label(op.key));
             }
             int fc = fs.stackSize, tc = ts.stackSize;
             // All three clicks in this tick: the cursor is empty again before the tick ends.
@@ -1291,28 +1313,50 @@ public final class Run {
             click(to);
             if (p.inventory.getItemStack() != null) click(from);
             if (p.inventory.getItemStack() != null) {
-                return fail("could not put the rest back after combining: "
-                    + GuiOps.describe(p.inventory.getItemStack(), keys) + " on the cursor");
+                return fail(
+                    "could not put the rest back after combining: " + GuiOps.describe(p.inventory.getItemStack(), keys)
+                        + " on the cursor");
             }
             int toNow = to.getStack() == null ? 0 : to.getStack().stackSize;
             int fromNow = from.getStack() == null ? 0 : from.getStack().stackSize;
             if (toNow != tc + op.moved || fromNow != fc - op.moved) {
-                return fail("combining gave " + fromNow + "/" + toNow + ", expected " + (fc - op.moved) + "/"
-                    + (tc + op.moved));
+                return fail(
+                    "combining gave " + fromNow
+                        + "/"
+                        + toNow
+                        + ", expected "
+                        + (fc - op.moved)
+                        + "/"
+                        + (tc + op.moved));
             }
-            trace.step("Combined " + op.moved + " x " + keys.label(op.key) + " #" + id + "[" + op.from + "] -> ["
-                + op.to + "]");
+            trace.step(
+                "Combined " + op.moved
+                    + " x "
+                    + keys.label(op.key)
+                    + " #"
+                    + id
+                    + "["
+                    + op.from
+                    + "] -> ["
+                    + op.to
+                    + "]");
             next++;
             return Outcome.RUNNING; // one pour per tick
         }
     }
 
-    /** The chest the next GoTo in the queue walks to, skipping bookkeeping steps; -1 if another kind of step comes first. */
+    /**
+     * The chest the next GoTo in the queue walks to, skipping bookkeeping steps; -1 if another kind of step comes
+     * first.
+     */
     private int nextVisit() {
         for (Step s : steps) {
             if (s instanceof GoTo) return ((GoTo) s).id;
-            if (s instanceof Open || s instanceof Pick || s instanceof Deposit || s instanceof VerifyVisit
-                || s instanceof Close || s instanceof CombineStep) return -1;
+            if (s instanceof Open || s instanceof Pick
+                || s instanceof Deposit
+                || s instanceof VerifyVisit
+                || s instanceof Close
+                || s instanceof CombineStep) return -1;
         }
         return -1;
     }
@@ -1320,7 +1364,8 @@ public final class Run {
     /** The open screen is still the window we opened for chest {@code id}. */
     private boolean isOpenScreen(int id) {
         EntityClientPlayerMP p = mc.thePlayer;
-        return openChest == id && p.openContainer != p.inventoryContainer && p.openContainer.windowId == windowId
+        return openChest == id && p.openContainer != p.inventoryContainer
+            && p.openContainer.windowId == windowId
             && mc.currentScreen instanceof GuiContainer;
     }
 

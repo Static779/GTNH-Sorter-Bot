@@ -57,9 +57,8 @@ public final class Planner {
             }
             if (trip == null) break;
             trips.add(trip);
-            at = sim.get(
-                trip.deposits.isEmpty() ? trip.source
-                    : trip.deposits.get(trip.deposits.size() - 1).target).pos;
+            at = sim
+                .get(trip.deposits.isEmpty() ? trip.source : trip.deposits.get(trip.deposits.size() - 1).target).pos;
         }
 
         int leftNoRoom = 0;
