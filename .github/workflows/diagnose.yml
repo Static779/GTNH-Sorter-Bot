@@ -1,6 +1,7 @@
 # Runs the full build with --continue and reports every failure as a check-run annotation,
 # plus the diff spotlessApply would make. Annotations are readable through the GitHub API,
-# so build problems can be diagnosed without downloading logs. Safe to delete once not needed.
+# so build problems can be diagnosed without downloading logs. If formatting is off, the formatted sources are
+# force-pushed to the spotless-fix branch so they can be taken over with git.
 name: Diagnose build
 
 on:
@@ -11,6 +12,8 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -48,3 +51,17 @@ jobs:
           awk '/^\* What went wrong/{p=1} p&&/^\* Try:/{p=0} p' build.log | head -400 | esc | sed 's/^/::error title=what went wrong::/'
           if [ -s spotless.diff ]; then esc < spotless.diff | sed 's/^/::error title=spotless diff::/'; else echo "::notice title=spotless diff::(no formatting changes)"; fi
           tail -60 build.log | esc | sed 's/^/::warning title=build log tail::/'
+
+      - name: Push spotlessApply result to the spotless-fix branch
+        if: always()
+        shell: bash
+        run: |
+          if [ -s spotless.diff ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git checkout -B spotless-fix
+            git add -A src
+            git commit -m "spotlessApply output for ${GITHUB_SHA::7}"
+            git push -f origin spotless-fix
+            echo "::notice title=spotless-fix::pushed formatted sources to branch spotless-fix"
+          fi
