@@ -16,6 +16,7 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
 |---|---|
 | `/chestsorter run` | Full sort (same as the key) |
 | `/chestsorter plan` | Survey and print the plan; moves nothing |
+| `/chestsorter whatif [n ...]` | Same as plan, plus what n more chests would change (default 6, 12, 24; the numbers are saved) |
 | `/chestsorter stop` | Stop now |
 | `/chestsorter status` | What it is doing |
 | `/chestsorter scan` | List nearby chests only |
@@ -46,6 +47,8 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
 - **Route**: it plans one route through all the chests before moving anything. At each chest it puts in what belongs there, takes out what doesn't (stacks with the nearest destination first), then puts in again, so one trip can pick up and drop off at many chests, and two full chests can swap stacks. The next chest is the one with the most work for the least walking. A trip stops taking new stacks after 8 visits (or twice your free slots) and only delivers, so it always ends empty-handed. If the next trip starts at the chest that is already open, it stays open.
   The exact shortest route can't be computed for real rooms (it's a pickup-and-delivery problem, which contains the travelling-salesman problem). On 369 small rooms where it can be computed, the planner's route was on average 9% longer than the shortest (median 4%, worst 71%). On 77 test rooms it walks 31% less and finishes ~24% sooner than the old one-source-chest-per-trip planner, with the same stacks moved.
 - **Capacity**: before moving, the trace lists slots used and free, buckets against chests, and each bucket's free slots, and warns when a bucket will be nearly full.
+- **Extra chests (what-if)**: plan-only runs re-plan with 6, 12 and 24 more chests (setting `extraChests`, or `/cs whatif 10 20`) and print one line each: stacks left over, groups under 10% free, misc share, categories per chest, free slots, moves and time, then a verdict (when everything fits, when every group has room, how much finer it sorts). The imaginary chests are your most common chest size, placed beside your chests nearest the middle of the room; walls aren't checked, so walking figures are estimates. Example from a 48-chest room: nearly full groups 4 → 2 (+6) → 1 (+24); categories per chest 4.2 → 2.6. In 12 crowded test rooms (~93% full), +24 chests took stacks left over from 350 to 0 and nearly full groups from 49 to 0.
+- **Room to grow**: when assigning chests, a group short of its keep-free room counts against the layout, so a spare chest goes to a nearly full group instead of sitting a little tidier (137 test rooms: groups under 10% free 303 → 146, same moves and leftovers).
 
 ## Why it can't scramble or lose items
 - It only ever sends two kinds of click: pick up a whole stack, and put it down. No shift-click, no dropping, no clicks outside the window.
@@ -69,7 +72,7 @@ In game: **Mods → Chest Sorter → Config**, `/cs config`, or bind **Open sett
 
 | Section | Settings |
 |---|---|
-| Sorting | scan radius (16), singleplayer direct read, HoloInventory read, combine stacks, stacks for a chest of its own (6), keep free (15%), layout tidiness (2.0), max trips (300), category groups |
+| Sorting | scan radius (16), singleplayer direct read, HoloInventory read, combine stacks, stacks for a chest of its own (6), keep free (15%), layout tidiness (2.0), max trips (300), extra chests to compare (6, 12, 24), category groups |
 | Movement | walk to chests, sprint, reach (4.0), path search limit, stuck after, new paths before skipping |
 | Safety and pacing | ticks between transfers (1), server wait before checks (4, raise on laggy servers), open timeout, check every transfer, re-check chests at the end, hostile radius (8), health fraction (0.5) |
 | Debug | trace file, every step in chat |

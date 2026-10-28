@@ -45,6 +45,13 @@ public final class Assigner {
      * weight of 4 let layoutWeight 3 leave ~26 stacks with nowhere to go, to keep chests tidy.
      */
     static final double CAPACITY_WEIGHT = 50.0;
+    /**
+     * Per slot a group is short of its room to grow (its stacks plus keepFree). Enough that a spare chest goes to a
+     * nearly full group rather than sitting a little tidier, not so much that full chests get emptied for it. Sweep of
+     * 137 rooms (0 / 0.5 / 2 / 5): groups under 10% free 303 / 206 / 146 / 120, stacks left over 730 / 736 / 732 /
+     * 753, moves within 0.3%.
+     */
+    static final double HEADROOM_WEIGHT = 2.0;
     /** Relative strength of the "related nearby" term against the "together" term. */
     static final double RELATED_WEIGHT = 0.5;
     private static final int MAX_PASSES = 30;
@@ -104,7 +111,7 @@ public final class Assigner {
      */
     public static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
         Weights w) {
-        return assign(chests, items, locked, w, new HashMap<String, String>(), Relations::score, null);
+        return assign(chests, items, locked, w, new HashMap<String, String>(), Relations::score, null, 0);
     }
 
     /**
@@ -133,7 +140,7 @@ public final class Assigner {
             if (!e.getKey()
                 .equals(e.getValue())) pre.put(e.getKey(), e.getValue());
         }
-        return assign(chests, items, locked, w, pre, tax::relation, bk);
+        return assign(chests, items, locked, w, pre, tax::relation, bk, keepFree);
     }
 
     /** Stacks per category (after {@code pre}), packing each item's stacks full. */
@@ -149,7 +156,7 @@ public final class Assigner {
     }
 
     private static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
-        Weights w, Map<String, String> pre, Relatedness relation, Taxonomy.Buckets bk) {
+        Weights w, Map<String, String> pre, Relatedness relation, Taxonomy.Buckets bk, double keepFree) {
         // ---- 1. demand per category, in slots, after packing stacks of each item full ----
         Map<String, Integer> demand = demand(chests, items, pre);
         for (String forced : locked.values()) demand.putIfAbsent(forced, 0);
@@ -246,7 +253,10 @@ public final class Assigner {
             for (int b = 0; b < k; b++) if (a != b) rel[a][b] = relation.score(cats.get(a), cats.get(b));
 
         // Categories without a chest (biggest first) take the unused chest that gives the lowest cost.
-        Cost cost = new Cost(n, k, slots, dist, mismatch, dem, rel, w);
+        int[] want = new int[k];
+        double kf = Math.max(0, Math.min(0.9, keepFree));
+        for (int j = 0; j < k; j++) want[j] = (int) Math.ceil(dem[j] / (1 - kf) - 1e-9);
+        Cost cost = new Cost(n, k, slots, dist, mismatch, dem, want, rel, w);
         int[] cur = start.clone();
         List<Integer> order = new ArrayList<>();
         for (int j = 0; j < k; j++) order.add(j);
@@ -362,19 +372,21 @@ public final class Assigner {
     private static final class Cost {
 
         final int n, k;
-        final int[] slots, dem;
+        final int[] slots, dem, want;
         final double[][] dist, rel;
         final int[][] mismatch;
         final Weights w;
-        double moves, missing, apart, unrelated;
+        double moves, missing, headroom, apart, unrelated;
 
-        Cost(int n, int k, int[] slots, double[][] dist, int[][] mismatch, int[] dem, double[][] rel, Weights w) {
+        Cost(int n, int k, int[] slots, double[][] dist, int[][] mismatch, int[] dem, int[] want, double[][] rel,
+            Weights w) {
             this.n = n;
             this.k = k;
             this.slots = slots;
             this.dist = dist;
             this.mismatch = mismatch;
             this.dem = dem;
+            this.want = want;
             this.rel = rel;
             this.w = w;
         }
@@ -382,6 +394,7 @@ public final class Assigner {
         double of(int[] cur) {
             moves = 0;
             missing = 0;
+            headroom = 0;
             apart = 0;
             unrelated = 0;
             int[] cap = new int[k];
@@ -389,7 +402,10 @@ public final class Assigner {
                 moves += mismatch[c][cur[c]];
                 if (cur[c] < k) cap[cur[c]] += slots[c];
             }
-            for (int j = 0; j < k; j++) missing += Math.max(0, dem[j] - cap[j]);
+            for (int j = 0; j < k; j++) {
+                missing += Math.max(0, dem[j] - cap[j]);
+                headroom += Math.max(0, want[j] - Math.max(cap[j], dem[j]));
+            }
             // Together: each chest's distance to the nearest other chest of its category (adjacent = 0).
             for (int c = 0; c < n; c++) {
                 if (cur[c] == k) continue;
@@ -415,6 +431,7 @@ public final class Assigner {
                 }
             }
             return w.moveWeight * moves + CAPACITY_WEIGHT * missing
+                + HEADROOM_WEIGHT * headroom
                 + w.layoutWeight * (apart + RELATED_WEIGHT * unrelated);
         }
 
@@ -422,12 +439,15 @@ public final class Assigner {
             double total = of(cur);
             return String.format(
                 java.util.Locale.ROOT,
-                "cost %.1f = %d stacks to move x %.1f + %d slots short x %.1f + layout x %.1f (apart %.1f, related %.1f)",
+                "cost %.1f = %d stacks to move x %.1f + %d slots short x %.1f + %d slots of growing room short x %.1f"
+                    + " + layout x %.1f (apart %.1f, related %.1f)",
                 total,
                 (int) moves,
                 w.moveWeight,
                 (int) missing,
                 CAPACITY_WEIGHT,
+                (int) headroom,
+                HEADROOM_WEIGHT,
                 w.layoutWeight,
                 apart,
                 RELATED_WEIGHT * unrelated);

@@ -30,6 +30,7 @@ import com.whalestorm.chestsorter.core.PlanChecker;
 import com.whalestorm.chestsorter.core.Planner;
 import com.whalestorm.chestsorter.core.SorterState;
 import com.whalestorm.chestsorter.core.Taxonomy;
+import com.whalestorm.chestsorter.core.WhatIf;
 
 /**
  * One sorting run: SCAN → SURVEY → PLAN → EXECUTE → VERIFY, driven one client tick at a time.
@@ -610,14 +611,20 @@ public final class Run {
     // planning
     // =====================================================================================================
 
+    /** Extra-chest comparison from the planning thread (plan-only runs), printed at the end of the plan. */
+    private List<WhatIf.Row> whatIf;
+    private long whatIfMs;
+
     /** Result of planning on the background thread. */
     private static final class Planned {
 
         Assigner.Result a;
         Plan plan;
         List<String> problems;
+        /** Extra-chest comparison (plan-only runs), or null. */
+        List<WhatIf.Row> whatIf;
         Throwable error;
-        long ms;
+        long ms, whatIfMs;
     }
 
     /**
@@ -647,6 +654,7 @@ public final class Run {
         final int minSplit = Config.minStacksForOwnChest, maxTrips = Config.maxTrips;
         final Planned out = new Planned();
         final int combines = toCombine;
+        final int[] extras = mode == Mode.PLAN_ONLY ? WhatIf.parse(Config.extraChests, 4, 500) : new int[0];
         Thread t = new Thread(() -> {
             long t0 = System.nanoTime();
             try {
@@ -660,6 +668,15 @@ public final class Run {
                     keepFree);
                 out.plan = Planner.plan(chests, items, out.a, carry, maxTrips, here);
                 out.problems = PlanChecker.check(chests, out.plan, items, carry);
+                if (extras.length > 0) {
+                    long w0 = System.nanoTime();
+                    WhatIf.Settings ws = new WhatIf.Settings(carry, layout, minSplit, keepFree, tax, maxTrips);
+                    List<WhatIf.Row> rows = new ArrayList<>();
+                    rows.add(WhatIf.measure(chests, items, out.a, out.plan, here, 0));
+                    for (int n : extras) rows.add(WhatIf.measure(chests, items, ws, here, n));
+                    out.whatIf = rows;
+                    out.whatIfMs = (System.nanoTime() - w0) / 1000000;
+                }
             } catch (Throwable e) {
                 out.error = e;
             }
@@ -684,6 +701,8 @@ public final class Run {
                 }
                 trace.log("Planned in " + out.ms + " ms");
                 plan = out.plan;
+                whatIf = out.whatIf;
+                whatIfMs = out.whatIfMs;
                 finishPlan(chests, items, combines, out.a, out.problems);
                 return Outcome.DONE;
             }
@@ -789,6 +808,7 @@ public final class Run {
         }
         trace.log("Plan check passed.");
         if (mode == Mode.PLAN_ONLY) {
+            if (whatIf != null) whatIfReport(whatIf, whatIfMs);
             finishOk("Plan only: nothing was moved.");
             return;
         }
@@ -840,7 +860,20 @@ public final class Run {
             if (free < Math.max(1, e.getValue() / 10)) tight.add(e.getKey() + " (" + free + " free)");
         }
         if (!tight.isEmpty())
-            trace.warn("Nearly full after sorting: " + tight + ". More chests would leave room to grow.");
+            trace.warn(
+                "Nearly full after sorting: " + tight
+                    + ". More chests would leave room to grow (/cs whatif shows how many).");
+    }
+
+    /** Prints the extra-chest comparison: one line per row, then the verdict. */
+    private void whatIfReport(List<WhatIf.Row> rows, long ms) {
+        if (rows.isEmpty()) return;
+        trace.info(
+            "With extra chests (each the size of your most common chest, placed next to your chests; walls not "
+                + "checked):");
+        for (WhatIf.Row r : rows) trace.info("  " + r.line());
+        trace.info(WhatIf.verdict(rows));
+        trace.log("Extra-chest comparison took " + ms + " ms");
     }
 
     private boolean allCombined() {

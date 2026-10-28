@@ -8,12 +8,13 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.util.EnumChatFormatting;
 
 import com.whalestorm.chestsorter.Config;
+import com.whalestorm.chestsorter.core.WhatIf;
 
 /** Client-side /chestsorter command. Never sent to the server. */
 public final class SorterCommand extends CommandBase {
 
     private static final List<String> SUBS = Arrays
-        .asList("run", "plan", "stop", "status", "scan", "item", "config", "verbose", "help");
+        .asList("run", "plan", "whatif", "stop", "status", "scan", "item", "config", "verbose", "help");
 
     @Override
     public String getCommandName() {
@@ -28,7 +29,7 @@ public final class SorterCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/chestsorter <run|plan|stop|status|scan|item|config|verbose|help>";
+        return "/chestsorter <run|plan|whatif|stop|status|scan|item|config|verbose|help>";
     }
 
     @Override
@@ -56,6 +57,25 @@ public final class SorterCommand extends CommandBase {
                 c.startWhenScreenCloses(Run.Mode.FULL);
                 break;
             case "plan":
+                c.startWhenScreenCloses(Run.Mode.PLAN_ONLY);
+                break;
+            case "whatif":
+                if (args.length > 1) {
+                    String list = String.join(", ", Arrays.copyOfRange(args, 1, args.length));
+                    int[] n = WhatIf.parse(list, 4, 500);
+                    if (n.length == 0) {
+                        Trace.chat("Give extra chest counts from 1 to 500, e.g. /cs whatif 6 12 24");
+                        break;
+                    }
+                    StringBuilder b = new StringBuilder();
+                    for (int v : n) b.append(b.length() == 0 ? "" : ", ")
+                        .append(v);
+                    Config.setString(Config.CAT_SORT, "extraChests", b.toString());
+                    Trace.chat("Comparing with " + b + " extra chests (saved).");
+                } else if (WhatIf.parse(Config.extraChests, 4, 500).length == 0) {
+                    Config.setString(Config.CAT_SORT, "extraChests", "6, 12, 24");
+                    Trace.chat("Comparing with 6, 12, 24 extra chests (saved).");
+                }
                 c.startWhenScreenCloses(Run.Mode.PLAN_ONLY);
                 break;
             case "stop":
@@ -88,6 +108,7 @@ public final class SorterCommand extends CommandBase {
         Trace.chat("Commands (/cs works too):");
         Trace.chat(g + "/chestsorter run  - sort nearby chests (same as the key)");
         Trace.chat(g + "/chestsorter plan - survey and show the plan, move nothing");
+        Trace.chat(g + "/chestsorter whatif [n ...] - plan only, and show what n extra chests would change");
         Trace.chat(g + "/chestsorter stop - stop now; carried items stay in your inventory");
         Trace.chat(g + "/chestsorter status - what it is doing");
         Trace.chat(g + "/chestsorter scan - list nearby chests only");

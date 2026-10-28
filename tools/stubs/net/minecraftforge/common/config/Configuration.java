@@ -6,6 +6,7 @@ public class Configuration { public static final String CATEGORY_GENERAL="genera
  public float getFloat(String n,String c,float d,float min,float max,String com){return d;}
  public Property get(String c, String k, int d){return new Property();}
  public Property get(String c, String k, String[] d, String comment){return new Property();}
+ public Property get(String c, String k, String d, String comment){return new Property();}
  public Property get(String c, String k, double d, String comment, double min, double max){return new Property();}
  public ConfigCategory getCategory(String c){return new ConfigCategory();}
  public boolean getBoolean(String n,String c,boolean d,String com){return d;}

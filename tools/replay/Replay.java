@@ -18,6 +18,7 @@ import com.whalestorm.chestsorter.core.Plan;
 import com.whalestorm.chestsorter.core.PlanChecker;
 import com.whalestorm.chestsorter.core.Planner;
 import com.whalestorm.chestsorter.core.Taxonomy;
+import com.whalestorm.chestsorter.core.WhatIf;
 
 /**
  * Re-plans a run from its trace file with the current core code, offline. Reads the container list, the item keys
@@ -119,6 +120,15 @@ public class Replay {
         List<String> problems = PlanChecker.check(surveyed, p, items, 27);
         System.out.println("Plan: " + p.trips.size() + " trips, " + p.stackMoves() + " stack moves, "
             + p.stacksLeftNoRoom + " stacks left for lack of room; check " + (problems.isEmpty() ? "OK" : problems));
+        long w0 = System.nanoTime();
+        List<WhatIf.Row> rows = new java.util.ArrayList<>();
+        rows.add(WhatIf.measure(surveyed, items, a, p, surveyed.get(0).pos, 0));
+        WhatIf.Settings st = new WhatIf.Settings(27, layout, minSplit, 0.15, tax, 10000);
+        for (int n : new int[] { 6, 12, 24 }) rows.add(WhatIf.measure(surveyed, items, st, surveyed.get(0).pos, n));
+        System.out.println("With extra chests (/cs whatif 6 12 24), "
+            + (System.nanoTime() - w0) / 1000000 + " ms:");
+        for (WhatIf.Row r : rows) System.out.println("  " + r.line());
+        System.out.println(WhatIf.verdict(rows));
     }
 
     static int firstEmpty(ChestModel c) {

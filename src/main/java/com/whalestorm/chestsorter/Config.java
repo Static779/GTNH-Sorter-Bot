@@ -39,6 +39,8 @@ public class Config {
     public static int keepFreePercent = 15;
     /** Category group lines, see {@link Taxonomy}. */
     public static String[] groups = Taxonomy.DEFAULT_GROUPS.clone();
+    /** Extra chest counts compared by /cs plan and /cs whatif, e.g. "6, 12, 24"; empty = no comparison. */
+    public static String extraChests = "6, 12, 24";
 
     // movement
     public static boolean walking = true;
@@ -165,6 +167,15 @@ public class Config {
                 + "Anything not listed is grouped by mod, or goes to 'misc' when chests run short.");
         g.setLanguageKey(LANG + "groups");
         groups = g.getStringList();
+        Property x = c.get(
+            CAT_SORT,
+            "extraChests",
+            "6, 12, 24",
+            "Plan-only runs (/cs plan, /cs whatif) also show what these many extra chests would change: stacks left "
+                + "over, groups nearly full, misc share, categories per chest, moves and time. Up to 4 numbers, "
+                + "comma-separated; empty = off.");
+        x.setLanguageKey(LANG + "extraChests");
+        extraChests = x.getString();
         maxTrips = c.getInt("maxTrips", CAT_SORT, 300, 1, 10000, "Most carry trips per run.", LANG + "maxTrips");
         localRead = c.getBoolean(
             "localRead",
@@ -198,6 +209,7 @@ public class Config {
                 "keepFreePercent",
                 "layoutWeight",
                 "maxTrips",
+                "extraChests",
                 "groups"));
 
         c.setCategoryComment(CAT_MOVE, "Walking to chests.");
@@ -311,6 +323,15 @@ public class Config {
             LANG + "verboseChat");
 
         if (c.hasChanged()) c.save();
+    }
+
+    /** Saves one text setting right away (used by /cs whatif). */
+    public static void setString(String category, String key, String value) {
+        if (config == null) return;
+        config.getCategory(category)
+            .get(key)
+            .set(value);
+        sync();
     }
 
     /** Saves one boolean right away (used by /cs verbose). */

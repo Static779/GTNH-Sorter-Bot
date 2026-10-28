@@ -22,6 +22,7 @@ import com.whalestorm.chestsorter.core.PlanChecker;
 import com.whalestorm.chestsorter.core.Planner;
 import com.whalestorm.chestsorter.core.SorterState;
 import com.whalestorm.chestsorter.core.Taxonomy;
+import com.whalestorm.chestsorter.core.WhatIf;
 
 /** Plain-Java tests for the core package (no JUnit, no Minecraft). Run with tools/test-core.sh. */
 public class CoreTests {
@@ -72,6 +73,8 @@ public class CoreTests {
         }
         tax = null;
         checkerCatchesBadPlans();
+        whatIfBasics();
+        whatIfMoreChestsHelpFullRooms();
         // pathfinder
         pathFlat();
         pathAroundWall();
@@ -565,6 +568,86 @@ public class CoreTests {
     /** When set, planAndCheck groups categories with this taxonomy first. */
     static Taxonomy tax = null;
     static int minSplit = 6;
+
+    static void whatIfBasics() {
+        eq("[6, 12, 24]", Arrays.toString(WhatIf.parse("24, 6;12 12 x -3 0", 4, 500)));
+        eq("[1, 2, 3, 4]", Arrays.toString(WhatIf.parse("1 2 3 4 5", 4, 500)));
+        eq("[]", Arrays.toString(WhatIf.parse("", 4, 500)));
+        eq("[]", Arrays.toString(WhatIf.parse("501", 4, 500)));
+
+        Map<Integer, ItemInfo> it = items("ingot", "dust", "plate");
+        List<ChestModel> cs = Arrays.asList(chest(0, 27, 0, 64, 0, 64), chest(1, 27, 1, 64, 2, 7, 0, 5),
+            chest(2, 54, 1, 3));
+        List<ChestModel> extra = WhatIf.extraChests(cs, 10);
+        check("whatif: 10 extra chests", extra.size() == 10);
+        Set<BlockPos> seen = new HashSet<>();
+        for (ChestModel c : cs) seen.add(c.pos);
+        boolean apart = true, beside = true, sized = true, empty = true;
+        for (ChestModel e : extra) {
+            apart &= seen.add(e.pos);
+            boolean touches = false;
+            for (BlockPos q : seen) {
+                if (q.equals(e.pos)) continue;
+                int d = Math.abs(q.x - e.pos.x) + Math.abs(q.y - e.pos.y) + Math.abs(q.z - e.pos.z);
+                touches |= d == 1;
+            }
+            beside &= touches;
+            sized &= e.size() == 27; // two 27s, one 54: most common is 27
+            empty &= e.isEmpty();
+            check("whatif: extra ids start high", e.id >= WhatIf.FIRST_EXTRA_ID);
+        }
+        check("whatif: extra chests never share a spot", apart);
+        check("whatif: each extra chest touches another chest", beside);
+        check("whatif: extra chests are the most common size", sized);
+        check("whatif: extra chests are empty", empty);
+        eq(WhatIf.extraChests(cs, 10).get(9).pos, extra.get(9).pos);
+
+        String before = "";
+        for (ChestModel c : cs) before += Arrays.toString(c.keys) + Arrays.toString(c.counts);
+        WhatIf.Settings st = new WhatIf.Settings(27, 2.0, 6, 0.15, Taxonomy.defaults(), 1000);
+        List<WhatIf.Row> rows = WhatIf.evaluate(cs, it, st, cs.get(0).pos, new int[] { 2, 6 });
+        String now = "";
+        for (ChestModel c : cs) now += Arrays.toString(c.keys) + Arrays.toString(c.counts);
+        check("whatif: input chests unchanged", before.equals(now));
+        check("whatif: 3 rows", rows.size() == 3);
+        eq(0, rows.get(0).extra);
+        eq(5, rows.get(1).chests);
+        eq(9, rows.get(2).chests);
+        check("whatif: verdict", !WhatIf.verdict(rows).isEmpty());
+        check("whatif: line", rows.get(1).line().startsWith("+2: "));
+        check("whatif: free slots grow with chests", rows.get(2).freeSlots > rows.get(0).freeSlots);
+    }
+
+    /** Over many crowded rooms, more chests leave fewer stacks over and fewer nearly full groups. */
+    static void whatIfMoreChestsHelpFullRooms() {
+        Random rnd = new Random(42);
+        String[] cats = { "ingot", "dust", "plate", "gem", "nugget", "dustSmall", "wireGt01", "pipeSmall", "gear",
+            "rod", "screw", "bolt", "ore", "crushed", "cell", "circuit" };
+        long left0 = 0, left24 = 0, tight0 = 0, tight24 = 0;
+        int rooms = 12;
+        for (int r = 0; r < rooms; r++) {
+            int n = 10 + rnd.nextInt(15);
+            Map<Integer, ItemInfo> it = new HashMap<>();
+            int kinds = 40 + rnd.nextInt(80);
+            for (int k = 0; k < kinds; k++) it.put(k, new ItemInfo(k, "i" + k, cats[rnd.nextInt(cats.length)], 64));
+            List<ChestModel> cs = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                ChestModel c = new ChestModel(i, new BlockPos(i % 8, 64 + i / 8, 0), "c", 27, 64);
+                for (int s = 0; s < 27; s++) if (rnd.nextDouble() < 0.93) c.set(s, rnd.nextInt(kinds), 64);
+                cs.add(c);
+            }
+            WhatIf.Settings st = new WhatIf.Settings(13, 2.0, 6, 0.15, Taxonomy.defaults(), 10000);
+            List<WhatIf.Row> rows = WhatIf.evaluate(cs, it, st, cs.get(0).pos, new int[] { 24 });
+            left0 += rows.get(0).leftOver;
+            left24 += rows.get(1).leftOver;
+            tight0 += rows.get(0).nearlyFull;
+            tight24 += rows.get(1).nearlyFull;
+        }
+        System.out.println("  what-if, " + rooms + " rooms ~93% full: stacks left over " + left0 + " -> " + left24
+            + " with +24 chests; nearly full groups " + tight0 + " -> " + tight24);
+        check("whatif: +24 chests leave fewer stacks over", left24 < left0);
+        check("whatif: +24 chests leave fewer nearly full groups", tight24 < tight0);
+    }
 
     static Plan planAndCheck(String name, List<ChestModel> cs, Map<Integer, ItemInfo> it, int carry) {
         Assigner.Result a = tax == null ? Assigner.assign(cs, it)
