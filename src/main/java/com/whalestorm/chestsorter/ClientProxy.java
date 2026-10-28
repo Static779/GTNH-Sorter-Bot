@@ -15,7 +15,7 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
-        Config.synchronizeConfiguration(event.getSuggestedConfigurationFile());
+        Config.init(event.getSuggestedConfigurationFile());
         ChestSorter.LOG.info("{} {} loading (client)", ChestSorter.NAME, Tags.VERSION);
     }
 

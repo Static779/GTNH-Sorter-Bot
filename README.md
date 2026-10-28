@@ -17,19 +17,28 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
 | `/chestsorter stop` | Stop now |
 | `/chestsorter status` | What it is doing |
 | `/chestsorter scan` | List nearby chests only |
-| `/chestsorter item` | Show the held item's category, ore names and mod |
-| `/chestsorter verbose` | Toggle step-by-step chat |
+| `/chestsorter item` | Show the held item's category, group, ore names and mod |
+| `/chestsorter config` | Open the settings screen |
+| `/chestsorter verbose` | Toggle step-by-step chat (saved) |
 
 ## How it decides
 - **Category** of an item: its GregTech ore-dictionary prefix (`ingot`, `dustTiny`, `crushedPurified`, `ore`, ...; the 308 prefixes come from GT's own `OrePrefixes`). Recipe-group names (`listAllseed`, `craftingPiston`, `itemSkull`) are ignored. Items without a usable name go to their mod split by creative tab, e.g. `mod:minecraft:redstone`, `mod:gregtech:gregtech.main`; else `misc`.
-- **Which chest gets which category** balances four things:
+- **Groups:** categories belong to groups, in layout order: ores (ore, rawOre, crushed...), dusts, metals (ingot, nugget, block), gems, plates, parts, wires, pipes, electronics, fluids, tools, wood, stone, glass, farming, food, mob drops, dyes, books. Anything not listed is grouped by mod (`mod:forestry`). You can edit the groups in the settings screen.
+- **How narrow the chests are** depends on how many chests you have (class-based storage, as warehouses do it):
+  1. one bucket per group; groups with fewer than `minStacksForOwnChest` (6) stacks are parked with their closest relative (or `misc`) so big groups get chests first,
+  2. too few chests: the smallest bucket joins its closest relative, else `misc`. **Every item gets a chest**,
+  3. spare chests: the biggest category is split out of its group into its own chest (dustImpure out of dusts, ingot out of metals...), biggest first, while chests last,
+  4. a leftover of under 6 stacks joins its closest split-off sibling (nugget → ingot),
+  5. chests still spare: parked groups get their own chest back.
+
+  Every step is listed in the trace.
+- **Which chest gets which bucket** balances four things:
   1. few stacks moved (a chest that mostly holds something keeps it),
   2. enough room (big categories get several chests),
   3. one category's chests side by side,
   4. related categories near each other (ore → rawOre → crushed → crushedPurified → dustImpure → dust → dustTiny; ingot ↔ nugget ↔ block; plate ↔ plateDouble ↔ ...; same-mod groups).
 
-  `layoutWeight` in the config sets the balance: 0 = only move what is out of place, 1 = balanced (default), higher = tidier layout even if more moves.
-- **More categories than chests:** the smallest category shares the chests of its most related category (dustTiny → dust). A small category with nothing related stays where it is. The plan lists both.
+  `layoutWeight` sets the balance: 0 = only move what is out of place, 1 = balanced (default), higher = tidier layout even if more moves.
 - **Moves**: whole stacks only, and only when the target chest has room for the whole stack. Otherwise the stack stays put.
 
 ## Why it can't scramble or lose items
@@ -39,7 +48,8 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
 - Before anything moves, the whole plan is replayed on a copy. If items would be created, lost, sent to the wrong category or not fit, nothing moves.
 - Every click is checked against what the client sees straight away. Before **every chest closes** it waits for the server, then checks: item totals in the chest + your inventory + cursor are exactly what they were when it opened, every carried stack is in its slot, and every other inventory slot is unchanged. Any mismatch stops the run on the spot. (`verifyEveryTransfer` adds a server check after each single stack.)
 - Before taking from a chest, it checks the chest still holds what the survey saw. If it changed, that trip is skipped.
-- If it can't reach a target while carrying, it takes the items back to where they came from. If even that fails, they stay in your inventory and chat tells you which slot holds what, and where it came from.
+- A chest it can't reach or open is skipped for the rest of the run: stacks meant for it go back where they came from and the other trips carry on. If even returning fails, they stay in your inventory and chat tells you which slot holds what, and where it came from.
+- Items are compared by identity and count. NBT changes an item makes by itself (Tinkers' tools do) are logged, not treated as loss.
 - At the end it compares, over every chest it touched, the totals from the survey with the totals seen at its final check (`finalRecheck` walks back and re-opens them instead).
 
 ## Stops by itself when
@@ -49,11 +59,20 @@ You take damage, health drops below 50%, a hostile mob is within 8 blocks, you p
 Every run writes `.minecraft\chestsorter\trace-<date>-<time>.log`: every step, every path, every click (window, slot, slot contents, cursor), every check, the full plan and each item's category and ore names. Chat prints the file's path at the end of each run. Send me that file.
 
 ## Settings
-`config/chestsorter.cfg`: `scanRadius` (16), `walking` (true), `sprint` (true), `reach` (4.0), `clickDelayTicks` (1 = one stack per tick), `settleTicks` (4, raise on laggy servers), `verifyEveryTransfer` (false; true = also check after every single stack, much slower), `finalRecheck` (false; true = walk back and re-open every touched chest at the end), `hostileRadius` (8), `minHealthFraction` (0.5), `maxTrips` (300), `traceFile` (true), `verboseChat` (false). Older config files get the new speed defaults automatically (`configVersion` 2); your other settings are kept.
+In game: **Mods → Chest Sorter → Config**, `/cs config`, or bind **Open settings** in Controls. Every setting has a tooltip and a reset button; Done saves, and the next run uses the new values. The file is `config/chestsorter.cfg`.
+
+| Section | Settings |
+|---|---|
+| Sorting | scan radius (16), stacks for a chest of its own (6), layout tidiness (1.0), max trips (300), category groups |
+| Movement | walk to chests, sprint, reach (4.0), path search limit, stuck after, new paths before skipping |
+| Safety and pacing | ticks between transfers (1), server wait before checks (4, raise on laggy servers), open timeout, check every transfer, re-check chests at the end, hostile radius (8), health fraction (0.5) |
+| Debug | trace file, every step in chat |
+
+Group lines look like `metals: ingot*, nugget*, block` (a trailing `*` matches any name starting with it). `/cs item` shows which category and group the held item lands in. Older config files are upgraded automatically (`configVersion` 3); your values are kept.
 
 ## Limits (v1)
 - Containers: vanilla chests (incl. trapped, double) and Iron Chests (all tiers except Dirt Chest 9000).
-- Walking: no doors, ladders, water or block breaking. Steps up 1 block, drops up to 3. Unreachable chests are skipped and listed.
+- Walking: no doors, ladders, water or block breaking. Steps up 1 block, drops up to 3. Unreachable chests are skipped and listed; run again after fixing access to finish them.
 - If two full chests each hold the other's items, neither can move first; those stacks stay put (add one empty slot or chest).
 - Chests fed or emptied by hoppers, pipes or conveyors change during the run. The checks notice and stop (or skip that trip); nothing is lost, but sort those areas with the automation paused.
 
@@ -65,7 +84,7 @@ Every run writes `.minecraft\chestsorter\trace-<date>-<time>.log`: every step, e
 gradlew.bat spotlessApply
 gradlew.bat build
 ```
-**Without Minecraft:** `tools/test-core.sh` runs the logic tests (categorizing, assigning, planning on 3000 random chest setups, pathfinding). `tools/check-stubs.sh` is a quick typo check.
+**Without Minecraft:** `tools/test-core.sh` runs the logic tests (categorizing, grouping, assigning, planning on 6000 random chest setups, pathfinding). `tools/check-stubs.sh` is a quick typo check. `tools/replay-trace.sh <trace.log> [minStacks] [layoutWeight] [groups-file]` re-plans a real run from its trace with the current code, so grouping changes can be checked against your actual chests.
 
 ## Layout
 | Path | What |

@@ -20,6 +20,7 @@ import com.whalestorm.chestsorter.core.Plan;
 import com.whalestorm.chestsorter.core.PlanChecker;
 import com.whalestorm.chestsorter.core.Planner;
 import com.whalestorm.chestsorter.core.SorterState;
+import com.whalestorm.chestsorter.core.Taxonomy;
 
 /** Plain-Java tests for the core package (no JUnit, no Minecraft). Run with tools/test-core.sh. */
 public class CoreTests {
@@ -49,6 +50,10 @@ public class CoreTests {
         assignerRelatedNearby();
         assignerDeterministicAndFast();
         relations();
+        taxonomyParse();
+        taxonomyBuckets();
+        taxonomyAssignEveryItemGetsAChest();
+        taxonomyManyCategories();
         // planner
         plannerBasicSort();
         plannerLeavesUnassignedAndFull();
@@ -56,6 +61,12 @@ public class CoreTests {
         plannerUsesFreedSlots();
         plannerNeverTouchesWellPlaced();
         randomizedPlans(3000);
+        tax = Taxonomy.defaults();
+        for (int m : new int[] { 1, 3, 8 }) {
+            minSplit = m;
+            randomizedPlans(1000);
+        }
+        tax = null;
         checkerCatchesBadPlans();
         // pathfinder
         pathFlat();
@@ -302,12 +313,165 @@ public class CoreTests {
         check("rel not a word prefix", com.whalestorm.chestsorter.core.Relations.score("dust", "dusty") == 0);
     }
 
+    // ---------------- taxonomy ----------------
+
+    static void taxonomyParse() {
+        Taxonomy t = Taxonomy.defaults();
+        check("defaults parse cleanly " + t.problems, t.problems.isEmpty());
+        eq("dusts", t.groupOf("dustTiny"));
+        eq("ores", t.groupOf("ore"));
+        eq("ores", t.groupOf("crushedPurified"));
+        eq("parts", t.groupOf("toolHeadFile")); // longer prefix "toolHead*" beats "tool*"
+        eq("tools", t.groupOf("toolSword"));
+        eq("glass", t.groupOf("blockGlass")); // exact beats nothing; "block" alone is metals
+        eq("metals", t.groupOf("block"));
+        eq("food", t.groupOf("mod:minecraft:food"));
+        eq("mod:gregtech", t.groupOf("mod:gregtech:gregtech.main"));
+        eq("mod:gregtech", t.groupOf("mod:gregtech"));
+        eq("anti", t.groupOf("anti"));
+        eq("misc", t.groupOf("misc"));
+        Taxonomy bad = Taxonomy.parse(new String[] { "no colon here", "a: x, y*", "a: z", "b: x", "# comment", "",
+            "c: *" });
+        check("bad lines reported " + bad.problems, bad.problems.size() == 4);
+        eq("a", bad.groupOf("x")); // first listing wins
+        eq("a", bad.groupOf("yes"));
+        eq(Arrays.asList("a", "b", "c"), bad.groups());
+        check("rel same group high", t.relation("dust", "dustTiny") >= 0.7);
+        check("rel same group vs bucket", t.relation("dusts", "dustTiny") >= 0.7);
+        check("rel neighbour groups", Math.abs(t.relation("ores", "dusts") - 0.6) < 1e-9);
+        check("rel far groups 0", t.relation("ores", "books") == 0);
+        check("rel misc 0", t.relation("misc", "dust") == 0);
+        check("rel same mod group", t.relation("mod:gregtech:a", "mod:gregtech:b") >= 0.7);
+    }
+
+    static void taxonomyBuckets() {
+        Taxonomy t = Taxonomy.defaults();
+        Map<String, Integer> d = new HashMap<>();
+        d.put("ore", 40);
+        d.put("rawOre", 10);
+        d.put("crushed", 30);
+        d.put("dust", 20);
+        d.put("dustTiny", 3);
+        d.put("ingot", 25);
+        d.put("nugget", 2);
+        Taxonomy.Buckets b = t.bucket(d, 10, 27, 6);
+        eq("ore", b.bucketOf.get("ore"));
+        eq("crushed", b.bucketOf.get("crushed"));
+        eq("ores", b.bucketOf.get("rawOre"));
+        eq("ingot", b.bucketOf.get("nugget")); // 2-stack leftover joins its split-off sibling
+        eq("dust", b.bucketOf.get("dustTiny"));
+        eq(5, b.members.size());
+        // Few chests: stay at group level.
+        Taxonomy.Buckets g = t.bucket(d, 3, 27, 6);
+        eq("ores", g.bucketOf.get("ore"));
+        eq("dusts", g.bucketOf.get("dust"));
+        eq("metals", g.bucketOf.get("ingot"));
+        // Fewer chests than groups: smallest group joins its neighbour.
+        Taxonomy.Buckets m = t.bucket(d, 2, 54, 6);
+        check("2 chests -> 2 buckets " + m.members.keySet(), m.members.size() == 2);
+        eq("ores", m.bucketOf.get("dust")); // equally related to ores and metals: joins the bigger one
+        eq("metals", m.bucketOf.get("ingot"));
+        // Unrelated small groups collect in misc instead of being left out.
+        Map<String, Integer> u = new HashMap<>(d);
+        u.put("anti", 1);
+        u.put("mod:x:a", 1);
+        u.put("mod:y", 1);
+        Taxonomy.Buckets mu = t.bucket(u, 4, 27, 6);
+        eq("misc", mu.bucketOf.get("anti"));
+        eq("misc", mu.bucketOf.get("mod:x:a"));
+        eq("misc", mu.bucketOf.get("mod:y"));
+        check("every category has a bucket", mu.bucketOf.keySet().equals(u.keySet()));
+        // Deterministic.
+        check("buckets deterministic", t.bucket(u, 4, 27, 6).bucketOf.equals(mu.bucketOf));
+        // Small world, plenty of chests: small groups are parked first but get their own chest back.
+        Map<String, Integer> small = new HashMap<>();
+        small.put("dust", 2);
+        small.put("ingot", 1);
+        small.put("mod:x:a", 3);
+        Taxonomy.Buckets sb = t.bucket(small, 5, 27, 6);
+        check("small world: 3 buckets " + sb.members, sb.members.size() == 3);
+        eq("dusts", sb.bucketOf.get("dust"));
+        eq("metals", sb.bucketOf.get("ingot"));
+        eq("mod:x", sb.bucketOf.get("mod:x:a"));
+        // Tight: 2 chests, 3 small groups -> two buckets, every category still has one.
+        Taxonomy.Buckets tb = t.bucket(small, 2, 27, 6);
+        check("tight small world: 2 buckets " + tb.members, tb.members.size() == 2);
+        check("tight: all covered", tb.bucketOf.keySet().equals(small.keySet()));
+        // Big groups get chests before tiny ones: 3 chests, a 60-stack dust group and two 2-stack mods.
+        Map<String, Integer> bigFirst = new HashMap<>();
+        bigFirst.put("dust", 30);
+        bigFirst.put("dustImpure", 30);
+        bigFirst.put("mod:a:x", 2);
+        bigFirst.put("mod:b:x", 2);
+        Taxonomy.Buckets bf = t.bucket(bigFirst, 5, 27, 6);
+        check("big first: dust split before tiny mods " + bf.members,
+            !bf.bucketOf.get("dust").equals(bf.bucketOf.get("dustImpure")));
+        eq("misc", bf.bucketOf.get("mod:a:x"));
+        eq("misc", bf.bucketOf.get("mod:b:x"));
+        Taxonomy.Buckets bf6 = t.bucket(bigFirst, 6, 27, 6);
+        check("6 chests: one tiny mod gets its chest back " + bf6.members, bf6.members.size() == 4);
+        // Too few chests: the merged bucket keeps the bigger side's name.
+        Taxonomy.Buckets bf3 = t.bucket(bigFirst, 3, 27, 6);
+        eq("dusts", bf3.bucketOf.get("mod:a:x"));
+        // Huge minimum: no splits at all.
+        eq("ores", t.bucket(d, 10, 27, 1000).bucketOf.get("ore"));
+    }
+
+    static void taxonomyAssignEveryItemGetsAChest() {
+        tax = Taxonomy.defaults();
+        Map<Integer, ItemInfo> it = items("mod:a", "mod:b", "misc");
+        List<ChestModel> cs = Arrays.asList(chest(0, 27, 0, 64, 0, 64, 2, 1), chest(1, 27, 1, 64));
+        Plan p = planAndCheck("tax unrelated", cs, it, 27);
+        check("tax: nothing unassigned " + lastAssign.unassigned, lastAssign.unassigned.isEmpty());
+        check("tax: mod:b shares misc", lastAssign.effective("mod:b").equals("misc"));
+        tax = null;
+    }
+
+    /** Like the 2026-10-28 trace: ~170 small categories, 48 chests. Everything must get a chest. */
+    static void taxonomyManyCategories() {
+        Random rnd = new Random(48);
+        Taxonomy t = Taxonomy.defaults();
+        List<String> cats = new ArrayList<>();
+        String[] base = { "ore", "rawOre", "crushed", "crushedPurified", "dustImpure", "dustPure", "dust", "dustSmall",
+            "dustTiny", "ingot", "nugget", "block", "gem", "gemFlawed", "plate", "stick", "bolt", "screw", "gearGt",
+            "pipeSmall", "pipeLarge", "cableGt01", "cell", "bucket", "log", "plank", "slab", "cobblestone", "stone",
+            "sand", "seed", "crop", "flower", "food", "dye", "bone", "string", "book", "anti", "ardite", "drawer" };
+        cats.addAll(Arrays.asList(base));
+        for (int i = 0; i < 60; i++) cats.add("mod:m" + (i % 25) + ":tab" + i);
+        Map<Integer, ItemInfo> it = new HashMap<>();
+        for (int k = 0; k < 400; k++) it.put(k, new ItemInfo(k, "i" + k, cats.get(rnd.nextInt(cats.size())), 64));
+        List<ChestModel> cs = new ArrayList<>();
+        for (int c = 0; c < 48; c++) {
+            ChestModel m = new ChestModel(c, new BlockPos(c % 12, 60 + c / 12, 0), "c", c % 3 == 0 ? 54 : 27, 64);
+            for (int s = 0; s < m.size(); s++) if (rnd.nextInt(5) < 2) m.set(s, rnd.nextInt(400), 1 + rnd.nextInt(64));
+            cs.add(m);
+        }
+        long t0 = System.nanoTime();
+        Assigner.Result a = Assigner.assign(cs, it, new HashMap<Integer, String>(), Assigner.Weights.DEFAULT, t, 6);
+        long ms = (System.nanoTime() - t0) / 1000000;
+        System.out.println("  48-chest taxonomy assignment: " + a.buckets.members.size() + " buckets in " + ms
+            + " ms; " + a.costReport);
+        check("many: nothing unassigned " + a.unassigned, a.unassigned.isEmpty());
+        check("many: buckets <= chests", a.buckets.members.size() <= 48);
+        check("many: every bucket has a chest", new HashSet<>(a.chestCategory.values()).containsAll(
+            a.buckets.members.keySet()));
+        check("many: under 3 s", ms < 3000);
+        Plan p = Planner.plan(cs, it, a, 30, 1000);
+        List<String> problems = PlanChecker.check(cs, p, it, 30);
+        check("many: plan clean " + problems, problems.isEmpty());
+        check("many: nothing left without room (" + p.stacksLeftNoRoom + ")", p.stacksLeftNoRoom == 0);
+    }
+
     // ---------------- planner ----------------
 
     static Assigner.Result lastAssign;
+    /** When set, planAndCheck groups categories with this taxonomy first. */
+    static Taxonomy tax = null;
+    static int minSplit = 6;
 
     static Plan planAndCheck(String name, List<ChestModel> cs, Map<Integer, ItemInfo> it, int carry) {
-        Assigner.Result a = Assigner.assign(cs, it);
+        Assigner.Result a = tax == null ? Assigner.assign(cs, it)
+            : Assigner.assign(cs, it, new HashMap<Integer, String>(), Assigner.Weights.DEFAULT, tax, minSplit);
         lastAssign = a;
         Plan p = Planner.plan(cs, it, a, carry, 1000);
         List<String> problems = PlanChecker.check(cs, p, it, carry);

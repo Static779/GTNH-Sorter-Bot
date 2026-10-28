@@ -77,3 +77,20 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 - Categorizer: recipe-group prefixes (list, crafting, item, ...) ignored; mod buckets split by creative tab. On your trace's 870 items, 52 change category (13 list → seed, 5 crafting → book, ...).
 - Assigner: weighted cost = stacks moved + 4 × slots short + layoutWeight × (apart + 0.5 × related distance); start from current contents, place categories with no chest in the cheapest empty chest, then single changes + best swap per pass. Deterministic; capped at 60k evaluations (60 chests ≈ 0.2 s here).
 - Relations: GT processing chains (my reading of GT's ore processing order) [Likely], name nesting, same mod.
+
+## Grouping, fixes and settings screen (2026-10-28, from your 4 traces)
+Why it looked random:
+- [Certain] trace-20261028-012205: 174 fine categories (110 of them 1–2 stacks) for 48 chests. The old merge only joined categories that had a relative; about 80 had none (mod tabs, odd ore prefixes like "anti", "ardite"), so those items stayed wherever they were. Half-sorted chests full of leftovers look random.
+- Research basis: Inventory Tweaks sorts with a hierarchical category tree (nested categories matched by id, damage or ore dict) [Certain, inventory-tweaks.readthedocs.io]; warehouses use class-based storage: group products into a few classes, give each class a zone, sized to the space [Certain, scitepress.org/Papers/2019/79524]. I combined both.
+- New: `Taxonomy` (core). Categories → groups (editable lines, layout order) → buckets sized to the chest count: park small groups, merge when chests are short (nothing is left without a chest; unrelated → `misc`), split the biggest categories out when chests are spare, fold leftovers into a sibling, give parked groups chests back if any remain. The Assigner then places buckets with the same weighted cost as before.
+- Replaying the 012205 trace's 880 item keys (no slot data in old traces, so one stack per key): 48 buckets, nothing unassigned, plan check OK. New traces log each chest's contents (`Contents #id:` lines) so `tools/replay-trace.sh` can replay real runs.
+
+Other issues in the traces:
+- [Certain] 012447 stopped with "Alumite Hammer 1 -> 0, Alumite Hammer 0 -> 1": the hammer in your inventory (key 3) changed its NBT mid-visit [Likely: Tinkers' tool data updated by the server]. Checks now compare by item identity + count (NBT ignored, damage ignored for non-subtype items) and log NBT-only changes.
+- [Certain] 012605: chest #26 sits on top of #27. The path search said "already in reach" from the block centre, the real position was out of reach → "0 steps", and the run returned everything and ended. Now: plan 1.0 block inside reach; if a path ends out of reach, step straight toward the chest over standable ground (max 20 ticks), then re-path.
+- [Certain] One unreachable chest used to end all remaining trips. Now that chest is skipped for the rest of the run, its stacks go back, other trips continue, and the end report says "X of Y trips ran" instead of "chests differ from the plan".
+- Timing in 012605: one stack per tick, chest opens ~9 ticks, walks ~12 ticks average.
+
+Settings screen:
+- [Certain] FML 1.7.10: `@Mod(guiFactory=…)` → `IModGuiFactory.mainConfigGuiClass()`, built by GuiModList via a `(GuiScreen)` constructor; `GuiConfig(parent, elements, modID, worldRestart, mcRestart, title, title2)`; `new ConfigElement(category)` gives a category button; on Done it posts `ConfigChangedEvent.OnConfigChangedEvent` on the FML bus and the mod re-reads/saves itself. Checked in FML/Forge 1.7.10 sources.
+- Number settings that older files stored as text (`reach`, `layoutWeight`, `minHealthFraction`) are converted to real number entries so the screen validates them; values kept.

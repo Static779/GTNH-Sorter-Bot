@@ -19,7 +19,8 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
     name = ChestSorter.NAME,
     version = Tags.VERSION,
     acceptedMinecraftVersions = "[1.7.10]",
-    acceptableRemoteVersions = "*")
+    acceptableRemoteVersions = "*",
+    guiFactory = "com.whalestorm.chestsorter.client.ConfigGuiFactory")
 public class ChestSorter {
 
     public static final String MODID = "chestsorter";

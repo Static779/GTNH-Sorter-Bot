@@ -14,9 +14,16 @@ public final class KeyBindings {
         Keyboard.KEY_NONE,
         "key.categories.chestsorter");
 
+    /** Opens the settings screen. Unbound by default too. */
+    public static final KeyBinding SETTINGS = new KeyBinding(
+        "key.chestsorter.settings",
+        Keyboard.KEY_NONE,
+        "key.categories.chestsorter");
+
     private KeyBindings() {}
 
     public static void register() {
         ClientRegistry.registerKeyBinding(TOGGLE);
+        ClientRegistry.registerKeyBinding(SETTINGS);
     }
 }

@@ -72,6 +72,13 @@ public final class GuiOps {
         return t;
     }
 
+    /** Totals by loose key (NBT and non-subtype damage ignored); see {@link ItemKeys}. */
+    public static Map<Integer, Long> looseTotals(Map<Integer, Long> strict, ItemKeys keys) {
+        Map<Integer, Long> t = new TreeMap<>();
+        for (Map.Entry<Integer, Long> e : strict.entrySet()) t.merge(keys.loose(e.getKey()), e.getValue(), Long::sum);
+        return t;
+    }
+
     private static void add(Map<Integer, Long> t, ItemKeys keys, ItemStack st) {
         int k = keys.keyOf(st);
         if (k != ChestModel.EMPTY) t.merge(k, (long) st.stackSize, Long::sum);

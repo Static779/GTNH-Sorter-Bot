@@ -6,10 +6,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 
+import com.whalestorm.chestsorter.ChestSorter;
 import com.whalestorm.chestsorter.Config;
 import com.whalestorm.chestsorter.core.Container;
 import com.whalestorm.chestsorter.core.ItemInfo;
 
+import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -25,6 +27,8 @@ public final class SorterController {
     /** A run asked for from chat starts once the chat screen has closed. */
     private Run.Mode pending;
     private int pendingTicks;
+    /** /cs config: open the settings once the chat screen has closed. */
+    private boolean pendingSettings;
 
     private SorterController() {}
 
@@ -34,12 +38,42 @@ public final class SorterController {
             if (isRunning()) stop("stopped by key");
             else start(Run.Mode.FULL);
         }
+        if (KeyBindings.SETTINGS.isPressed()) openSettings();
+    }
+
+    /** The settings screen saved: re-read the file so the next run uses the new values. */
+    @SubscribeEvent
+    public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
+        if (!ChestSorter.MODID.equals(event.modID)) return;
+        Config.sync();
+        ChestSorter.LOG.info("Settings saved and reloaded");
+    }
+
+    /** Opens the settings screen (stops a running sort first: any screen would stop it anyway). */
+    public void openSettings() {
+        if (isRunning()) stop("settings opened");
+        Minecraft.getMinecraft()
+            .displayGuiScreen(new SettingsScreen(null));
+    }
+
+    /** For /cs config: open once chat has closed (closing chat would otherwise close the settings too). */
+    public void openSettingsWhenScreenCloses() {
+        pendingSettings = true;
+        pendingTicks = 0;
     }
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getMinecraft();
+        if (pendingSettings) {
+            if (mc.currentScreen == null) {
+                pendingSettings = false;
+                openSettings();
+            } else if (++pendingTicks > 100) {
+                pendingSettings = false;
+            }
+        }
         if (pending != null && mc.thePlayer != null) {
             if (mc.currentScreen == null) {
                 Run.Mode m = pending;
@@ -123,7 +157,17 @@ public final class SorterController {
         ItemKeys k = new ItemKeys();
         int key = k.keyOf(held);
         ItemInfo info = k.info(key);
-        Trace.chat(info.label + EnumChatFormatting.GRAY + " -> " + EnumChatFormatting.RESET + info.category);
+        String group = com.whalestorm.chestsorter.core.Taxonomy.parse(Config.groups)
+            .groupOf(info.category);
+        Trace.chat(
+            info.label + EnumChatFormatting.GRAY
+                + " -> category "
+                + EnumChatFormatting.RESET
+                + info.category
+                + EnumChatFormatting.GRAY
+                + ", group "
+                + EnumChatFormatting.RESET
+                + group);
         Trace.chat(
             EnumChatFormatting.GRAY + "ore names: "
                 + k.oreNames(key)

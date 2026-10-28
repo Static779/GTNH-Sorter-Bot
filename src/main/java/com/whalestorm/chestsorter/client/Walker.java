@@ -17,6 +17,9 @@ import com.whalestorm.chestsorter.core.PathFinder;
  * - Cuts corners on level ground: steers straight at the furthest path node (up to 8 ahead) it can walk to in a
  * straight line, instead of visiting every block centre.
  * - Sprints on straight runs when food allows, turns while moving, and only slows down at the very end.
+ * - Plans to stand {@link #PLAN_MARGIN} inside reach, because the path works with block centres while the player can
+ * stand anywhere in a block. If the path still ends out of reach, it nudges straight toward the chest over standable
+ * ground for up to {@link #NUDGE_TICKS} ticks (a chest stacked on another chest needed this).
  * - Rotation smoothing follows LootGameSolver by KyroXova (MIT, github.com/KyroXova/LootGameSolver); this walker
  * turns faster (50 degrees per tick) since it is walking, not aiming.
  */
@@ -31,6 +34,9 @@ public final class Walker {
     /** Vanilla eye height above the feet, used for the reach test while planning. */
     public static final double EYE = 1.62;
     private static final int LOOKAHEAD = 8;
+    /** Plan to stand this much closer than the reach (block centre vs real position: up to ~0.7 sideways). */
+    static final double PLAN_MARGIN = 1.0;
+    static final int NUDGE_TICKS = 20;
 
     private final AutoInput input;
     private final Trace trace;
@@ -43,6 +49,7 @@ public final class Walker {
     private double bestDist;
     private int sinceProgress;
     private String failure;
+    private int nudge;
 
     public Walker(AutoInput input, Trace trace) {
         this.input = input;
@@ -59,6 +66,7 @@ public final class Walker {
         this.index = 0;
         this.repaths = 0;
         this.failure = null;
+        this.nudge = 0;
         resetProgress();
     }
 
@@ -97,16 +105,17 @@ public final class Walker {
         if (path == null) {
             terrain = new ClientTerrain(world);
             BlockPos from = feet(p);
+            double planReach = Math.max(1.5, Config.reach - PLAN_MARGIN);
             path = PathFinder
-                .find(terrain, from, PathFinder.withinReach(target, Config.reach - 0.3, EYE), Config.maxPathNodes);
+                .find(terrain, from, PathFinder.withinReach(target, planReach, EYE), Config.maxPathNodes);
             index = 0;
             resetProgress();
             if (path == null) return fail("no walkable path from " + from + " to " + target);
             trace.step("Path to " + target + ": " + path.size() + " steps");
-            if (path.isEmpty()) return fail("standing next to the chest but still out of reach");
         }
 
         BlockPos here = feet(p);
+        if (path.isEmpty() || index >= path.size()) return nudge(p, here);
         // Skip nodes already reached (or passed while cutting corners).
         for (int k = path.size() - 1; k >= index; k--) {
             BlockPos n = path.get(k);
@@ -117,7 +126,7 @@ public final class Walker {
                 break;
             }
         }
-        if (index >= path.size()) return repath("path ended out of reach");
+        if (index >= path.size()) return nudge(p, here);
 
         // Steer at the furthest node we can walk to in a straight line on this level.
         int aim = index;
@@ -158,6 +167,36 @@ public final class Walker {
                 return repath("no progress toward " + first + " for " + Config.stuckTicks + " ticks");
             }
         }
+        return Status.RUNNING;
+    }
+
+    /**
+     * The path is done but the chest is not in reach yet: step straight toward it while the ground ahead is
+     * standable at this height, for at most {@link #NUDGE_TICKS} ticks, then re-path.
+     */
+    private Status nudge(EntityClientPlayerMP p, BlockPos here) {
+        double dx = target.x + 0.5 - p.posX, dz = target.z + 0.5 - p.posZ;
+        double h = Math.sqrt(dx * dx + dz * dz);
+        if (nudge == 0) trace.step("Path ended " + String.format(java.util.Locale.ROOT, "%.2f", h)
+            + " blocks from the chest, out of reach; stepping closer");
+        boolean blocked = h < 1.2; // already next to it: walking further would walk into it
+        if (!blocked) {
+            double ax = p.posX + dx / h * 0.6, az = p.posZ + dz / h * 0.6;
+            blocked = !PathFinder
+                .standable(terrain, MathHelper.floor_double(ax), here.y, MathHelper.floor_double(az));
+        }
+        if (blocked || ++nudge > NUDGE_TICKS) {
+            nudge = 0;
+            return repath(blocked ? "path ended out of reach and the way to the chest is blocked"
+                : "path ended out of reach; stepping closer did not help");
+        }
+        float yaw = (float) (Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F;
+        p.rotationYaw = approach(p.rotationYaw, yaw, 50.0F);
+        float off = Math.abs(MathHelper.wrapAngleTo180_float(p.rotationYaw - yaw));
+        input.forward = off > 45.0F ? 0f : 0.5f;
+        input.jumpNext = false;
+        input.sprint = false;
+        p.setSprinting(false);
         return Status.RUNNING;
     }
 

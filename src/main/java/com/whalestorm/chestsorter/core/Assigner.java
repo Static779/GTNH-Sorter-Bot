@@ -51,6 +51,12 @@ public final class Assigner {
      */
     private static final int MAX_EVALS = 60000;
 
+    /** How related two categories (or buckets) are, 0..1. */
+    public interface Relatedness {
+
+        double score(String a, String b);
+    }
+
     public static final class Result {
 
         /** chest id → category. Chests absent here stay empty and unused. */
@@ -61,13 +67,16 @@ public final class Assigner {
         public final Map<String, String> merged;
         /** Final cost and its parts, for the trace. */
         public final String costReport;
+        /** How fine categories were grouped into buckets before assigning chests (null without a taxonomy). */
+        public final Taxonomy.Buckets buckets;
 
         Result(Map<Integer, String> chestCategory, List<String> unassigned, Map<String, String> merged,
-            String costReport) {
+            String costReport, Taxonomy.Buckets buckets) {
             this.chestCategory = chestCategory;
             this.unassigned = unassigned;
             this.merged = merged;
             this.costReport = costReport;
+            this.buckets = buckets;
         }
 
         /** The category whose chests an item of {@code category} belongs in (itself unless merged). */
@@ -92,18 +101,49 @@ public final class Assigner {
      */
     public static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
         Weights w) {
-        // ---- 1. demand per category, in slots, after packing stacks of each item full ----
+        return assign(chests, items, locked, w, new HashMap<String, String>(), Relations::score, null);
+    }
+
+    /**
+     * Groups fine categories into buckets with {@code tax} first (sized to the chests that exist), then assigns
+     * chests to buckets. Every item gets a bucket; related buckets sit near each other.
+     */
+    public static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
+        Weights w, Taxonomy tax, int minSplitStacks) {
+        Map<String, Integer> fine = demand(chests, items, new HashMap<String, String>());
+        int slots = 0;
+        for (ChestModel m : chests) slots += m.size();
+        double avg = chests.isEmpty() ? 27 : (double) slots / chests.size();
+        Taxonomy.Buckets bk = tax.bucket(fine, chests.size() - locked.size(), avg, minSplitStacks);
+        Map<String, String> pre = new TreeMap<>();
+        for (Map.Entry<String, String> e : bk.bucketOf.entrySet()) {
+            if (!e.getKey()
+                .equals(e.getValue())) pre.put(e.getKey(), e.getValue());
+        }
+        return assign(chests, items, locked, w, pre, tax::relation, bk);
+    }
+
+    /** Stacks per category (after {@code pre}), packing each item's stacks full. */
+    static Map<String, Integer> demand(List<ChestModel> chests, Map<Integer, ItemInfo> items,
+        Map<String, String> pre) {
         Map<Integer, Long> totals = PlanChecker.totals(chests);
         Map<String, Integer> demand = new TreeMap<>();
         for (Map.Entry<Integer, Long> e : totals.entrySet()) {
             ItemInfo info = info(items, e.getKey());
             int limit = Math.max(1, Math.min(info.maxStack, 64));
-            demand.merge(info.category, (int) ((e.getValue() + limit - 1) / limit), Integer::sum);
+            demand.merge(effectiveOf(info.category, pre), (int) ((e.getValue() + limit - 1) / limit), Integer::sum);
         }
+        return demand;
+    }
+
+    private static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
+        Weights w, Map<String, String> pre, Relatedness relation, Taxonomy.Buckets bk) {
+        // ---- 1. demand per category, in slots, after packing stacks of each item full ----
+        Map<String, Integer> demand = demand(chests, items, pre);
         for (String forced : locked.values()) demand.putIfAbsent(forced, 0);
 
         // ---- 2. merge the smallest categories until they fit the number of chests ----
-        Map<String, String> merged = new TreeMap<>();
+        Map<String, String> merged = new TreeMap<>(pre);
         List<String> unassigned = new ArrayList<>();
         Map<String, Integer> active = new TreeMap<>(demand);
         while (active.size() > chests.size()) {
@@ -117,7 +157,7 @@ public final class Assigner {
             double best = 0;
             for (String t : active.keySet()) {
                 if (t.equals(small)) continue;
-                double r = Relations.score(small, t);
+                double r = relation.score(small, t);
                 if (r > best || (r == best && r > 0 && active.get(t) > active.get(parent))) {
                     best = r;
                     parent = t;
@@ -191,7 +231,7 @@ public final class Assigner {
         for (int j = 0; j < k; j++) dem[j] = active.get(cats.get(j));
         double[][] rel = new double[k][k];
         for (int a = 0; a < k; a++)
-            for (int b = 0; b < k; b++) if (a != b) rel[a][b] = Relations.score(cats.get(a), cats.get(b));
+            for (int b = 0; b < k; b++) if (a != b) rel[a][b] = relation.score(cats.get(a), cats.get(b));
 
         // Categories without a chest (biggest first) take the unused chest that gives the lowest cost.
         Cost cost = new Cost(n, k, slots, dist, mismatch, dem, rel, w);
@@ -298,7 +338,7 @@ public final class Assigner {
             }
         }
         Collections.sort(unassigned);
-        return new Result(result, unassigned, merged, cost.report(cur));
+        return new Result(result, unassigned, merged, cost.report(cur), bk);
     }
 
     private static String effectiveOf(String cat, Map<String, String> merged) {

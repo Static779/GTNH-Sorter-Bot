@@ -28,6 +28,7 @@ import com.whalestorm.chestsorter.core.Plan;
 import com.whalestorm.chestsorter.core.PlanChecker;
 import com.whalestorm.chestsorter.core.Planner;
 import com.whalestorm.chestsorter.core.SorterState;
+import com.whalestorm.chestsorter.core.Taxonomy;
 
 /**
  * One sorting run: SCAN → SURVEY → PLAN → EXECUTE → VERIFY, driven one client tick at a time.
@@ -42,6 +43,10 @@ import com.whalestorm.chestsorter.core.SorterState;
  * the slots involved must hold exactly what was expected, and the cursor must be empty. Any mismatch stops the run.
  * - The plan is replayed by {@link PlanChecker} before anything moves; any problem means nothing moves.
  * - If a run stops while carrying items, they stay in your inventory and the report says where they came from.
+ * - Checks compare items by loose key (see {@link ItemKeys}) so a tool that changes its own NBT in the inventory does
+ * not stop the run; counts are always exact.
+ * - A chest that cannot be reached or opened is skipped for the rest of the run: stacks meant for it go back to
+ * where they came from and the other trips carry on.
  */
 public final class Run {
 
@@ -109,6 +114,9 @@ public final class Run {
     private final Map<Integer, ChestModel> survey = new LinkedHashMap<>();
     private final Map<Integer, ChestModel> after = new LinkedHashMap<>();
     private final Set<Integer> skippedChests = new TreeSet<>();
+    /** Chests that could not be reached or opened during EXECUTE; trips avoid them from then on. */
+    private final Set<Integer> unreachable = new TreeSet<>();
+    private int tripsSkipped;
     private final Set<Integer> touched = new TreeSet<>();
     private final List<Integer> carrySlots = new ArrayList<>();
     private final Map<Integer, Carried> carried = new TreeMap<>();
@@ -212,6 +220,7 @@ public final class Run {
                     ChestModel m = readOpen(id);
                     survey.put(id, m);
                     trace.step("Surveyed #" + id + ": " + countUsed(m) + "/" + m.size() + " slots used");
+                    trace.log("Contents #" + id + ": " + contentsLine(m));
                     return Outcome.DONE;
                 }
             });
@@ -285,9 +294,15 @@ public final class Run {
     private void onStepFailed(Step s) {
         String why = failure != null ? failure : "step failed: " + s.describe();
         failure = null;
+        boolean environmental = s instanceof GoTo || s instanceof Open;
+        int chest = s instanceof GoTo ? ((GoTo) s).id : s instanceof Open ? ((Open) s).id : -1;
         if (s.skippable && carried.isEmpty()) {
             trace.warn("Skipping " + s.group + ": " + why);
             if (s.group.startsWith("survey #")) skippedChests.add(Integer.parseInt(s.group.substring(8)));
+            if (s.group.startsWith("trip ")) {
+                tripsSkipped++;
+                if (environmental) unreachable.add(chest);
+            }
             walker.stop();
             // Drop the rest of this group, then make sure no chest is left open.
             while (!steps.isEmpty() && steps.peek().group.equals(s.group)) steps.poll();
@@ -296,20 +311,31 @@ public final class Run {
             }
             return;
         }
-        // Could not reach or open a chest while carrying: take the items back. Any other failure (a check that found
-        // unexpected items) stops at once, because more clicking could make it worse; items stay in your inventory.
-        boolean environmental = s instanceof GoTo || s instanceof Open;
-        if (!carried.isEmpty() && environmental && !s.group.startsWith("return")) {
-            trace.warn("Problem while carrying items: " + why + ". Taking them back to where they came from.");
+        // Could not reach or open a deposit chest: skip that chest for the rest of the run. This trip drops its visit
+        // there and carries on; whatever was meant for it goes back to its source at the end of the trip. Any other
+        // failure (a check that found unexpected items) stops at once, because more clicking could make it worse;
+        // items stay in your inventory.
+        if (environmental && !s.group.startsWith("return")) {
+            unreachable.add(chest);
+            trace.warn(
+                "Chest #" + chest
+                    + ": "
+                    + why
+                    + ". Skipping it for the rest of the run"
+                    + (carried.isEmpty() ? "." : "; stacks meant for it go back where they came from."));
             walker.stop();
-            steps.clear();
-            queueReturn("return");
+            while (!steps.isEmpty() && steps.peek().group.equals(s.group) && isVisitStep(steps.peek())) steps.poll();
             if (openChest >= 0 || mc.thePlayer.openContainer != mc.thePlayer.inventoryContainer) {
-                steps.addFirst(new Close("return", false));
+                steps.addFirst(new Close(s.group + " cleanup", false));
             }
             return;
         }
         abort(why);
+    }
+
+    /** Steps that belong to one chest visit after its GoTo (dropped together when that chest is unreachable). */
+    private static boolean isVisitStep(Step s) {
+        return s instanceof Open || s instanceof Deposit || s instanceof VerifyVisit || s instanceof Close;
     }
 
     private void nextPhase() {
@@ -370,11 +396,15 @@ public final class Run {
             return;
         }
         Map<Integer, ItemInfo> items = keys.infos();
+        Taxonomy tax = Taxonomy.parse(Config.groups);
+        for (String pr : tax.problems) trace.warn("Category groups setting: " + pr);
         Assigner.Result a = Assigner.assign(
             chests,
             items,
             new java.util.HashMap<Integer, String>(),
-            new Assigner.Weights(1.0, Config.layoutWeight));
+            new Assigner.Weights(1.0, Config.layoutWeight),
+            tax,
+            Config.minStacksForOwnChest);
         int carry = Math.max(1, carrySlots.size());
         plan = Planner.plan(chests, items, a, carry, Config.maxTrips);
         List<String> problems = PlanChecker.check(chests, plan, items, carry);
@@ -398,20 +428,36 @@ public final class Run {
                 .append(e.getValue());
         }
         trace.info("Chests: " + sum + " (each chest's category is in the trace)");
-        if (!plan.merged.isEmpty()) {
-            StringBuilder m = new StringBuilder();
-            for (Map.Entry<String, String> e : plan.merged.entrySet()) {
-                if (m.length() > 0) m.append(", ");
-                m.append(e.getKey())
-                    .append(" -> ")
-                    .append(e.getValue());
+        if (a.buckets != null) {
+            trace.log(
+                "Grouping for " + chests.size()
+                    + " chests (min "
+                    + Config.minStacksForOwnChest
+                    + " stacks for a chest of its own):");
+            for (String st : a.buckets.steps) trace.log("  " + st);
+            trace.log("Buckets (stacks: categories):");
+            for (Map.Entry<String, List<String>> e : a.buckets.members.entrySet()) {
+                trace.log("  " + e.getKey() + " (" + a.buckets.demand.get(e.getKey()) + "): " + e.getValue());
             }
-            trace.info("Not enough chests, so these share a related category's chests: " + m);
+        }
+        if (!plan.merged.isEmpty()) {
+            Map<String, List<String>> shares = new TreeMap<>();
+            for (Map.Entry<String, String> e : plan.merged.entrySet()) {
+                shares.computeIfAbsent(e.getValue(), x -> new ArrayList<>())
+                    .add(e.getKey());
+            }
+            StringBuilder m = new StringBuilder();
+            for (Map.Entry<String, List<String>> e : shares.entrySet()) {
+                if (m.length() > 0) m.append("; ");
+                m.append(e.getKey())
+                    .append(" also holds ")
+                    .append(String.join(", ", e.getValue()));
+            }
+            trace.log("Shared chests: " + m);
         }
         if (!plan.unassigned.isEmpty()) {
             trace.warn(
-                "No chest and nothing related for: " + plan.unassigned
-                    + ". Those items stay where they are. Add empty chests to sort them.");
+                "No chest for: " + plan.unassigned + ". Those items stay where they are. Add empty chests to sort them.");
         }
         if (plan.stacksLeftNoRoom > 0) {
             trace.warn(plan.stacksLeftNoRoom + " stacks stay where they are: their category's chests are full.");
@@ -466,7 +512,11 @@ public final class Run {
                 return Outcome.DONE;
             }
         });
-        for (int i = 0; i < trip.picks.size(); i++) steps.add(new Pick(g, src, i, trip.picks.get(i), pickToSlot));
+        final Map<Integer, Integer> pickTarget = new HashMap<>();
+        for (Plan.Deposit d : trip.deposits) for (int idx : d.picks) pickTarget.put(idx, d.target);
+        for (int i = 0; i < trip.picks.size(); i++) {
+            steps.add(new Pick(g, src, i, trip.picks.get(i), pickToSlot, pickTarget.get(i)));
+        }
         steps.add(new VerifyVisit(g, src));
         steps.add(new Close(g, false));
         for (Plan.Deposit d : trip.deposits) {
@@ -485,7 +535,7 @@ public final class Run {
             Outcome tick() {
                 tripsDone++;
                 if (!carried.isEmpty()) {
-                    trace.warn(carried.size() + " stacks did not fit; taking them back to chest #" + src + ".");
+                    trace.warn(carried.size() + " stacks could not be stored; taking them back to chest #" + src + ".");
                     queueReturn("return " + g);
                 }
                 return Outcome.DONE;
@@ -541,6 +591,10 @@ public final class Run {
         }
 
         Outcome tick() {
+            if (!started && unreachable.contains(id) && !group.startsWith("return")) {
+                failure = "chest #" + id + " could not be reached or opened earlier in this run";
+                return Outcome.FAILED;
+            }
             if (!started) {
                 walker.start(pos(id));
                 started = true;
@@ -694,7 +748,7 @@ public final class Run {
     /** Moves one planned stack from the open source chest into an empty carry slot. */
     private final class Pick extends Step {
 
-        final int src, index;
+        final int src, index, target;
         final Plan.Pick pick;
         final Map<Integer, Integer> pickToSlot;
         int phase;
@@ -702,12 +756,13 @@ public final class Run {
         Slot chestSlot, carrySlot;
         int carryIndex;
 
-        Pick(String g, int src, int index, Plan.Pick pick, Map<Integer, Integer> pickToSlot) {
+        Pick(String g, int src, int index, Plan.Pick pick, Map<Integer, Integer> pickToSlot, Integer target) {
             super(g, false);
             this.src = src;
             this.index = index;
             this.pick = pick;
             this.pickToSlot = pickToSlot;
+            this.target = target == null ? -1 : target;
         }
 
         String describe() {
@@ -717,6 +772,11 @@ public final class Run {
         Outcome tick() {
             EntityClientPlayerMP p = mc.thePlayer;
             if (phase == 0) {
+                if (unreachable.contains(target)) {
+                    trace.step("Leaving " + pick.count + " x " + keys.label(pick.key) + " in #" + src
+                        + ": its chest #" + target + " was unreachable");
+                    return Outcome.DONE;
+                }
                 if (!requireOpen(src)) return Outcome.FAILED;
                 if (p.inventory.getItemStack() != null) return fail("cursor not empty before pickup");
                 chestSlot = GuiOps.chestSlots(p.openContainer, p)
@@ -777,11 +837,11 @@ public final class Run {
             // verify after the server had time to answer
             if (!requireOpen(src)) return Outcome.FAILED;
             Map<Integer, Long> now = GuiOps.totals(p.openContainer, p, keys);
-            if (!now.equals(before)) return fail("item totals changed: " + GuiOps.diff(before, now, keys));
+            if (!totalsMatch(before, now)) return fail("item totals changed: " + looseDiff(before, now));
             if (chestSlot.getStack() != null)
                 return fail("source slot not empty after pickup: " + GuiOps.describe(chestSlot.getStack(), keys));
             ItemStack inCarry = carrySlot.getStack();
-            if (keys.keyOf(inCarry) != pick.key || inCarry.stackSize != pick.count) {
+            if (keys.looseOf(inCarry) != keys.loose(pick.key) || inCarry.stackSize != pick.count) {
                 return fail("carry slot holds " + GuiOps.describe(inCarry, keys));
             }
             if (p.inventory.getItemStack() != null) return fail("cursor not empty after pickup");
@@ -831,7 +891,7 @@ public final class Run {
                 Slot carrySlot = GuiOps.playerSlot(p.openContainer, p, invIndex);
                 if (carrySlot == null) return fail("inventory slot " + invIndex + " not shown in this chest screen");
                 ItemStack mine = carrySlot.getStack();
-                if (keys.keyOf(mine) != c.key || mine.stackSize != c.count) {
+                if (keys.looseOf(mine) != keys.loose(c.key) || mine.stackSize != c.count) {
                     return fail(
                         "inventory slot " + invIndex
                             + " holds "
@@ -849,7 +909,7 @@ public final class Run {
                 // Pick up the carried stack and place it, all in this tick.
                 click(carrySlot);
                 ItemStack cur = p.inventory.getItemStack();
-                if (keys.keyOf(cur) != c.key || cur.stackSize != c.count) {
+                if (keys.looseOf(cur) != keys.loose(c.key) || cur.stackSize != c.count) {
                     if (cur != null) click(carrySlot);
                     return fail("pickup from inventory gave " + GuiOps.describe(cur, keys));
                 }
@@ -900,7 +960,7 @@ public final class Run {
             }
             if (!requireOpen(target)) return Outcome.FAILED;
             Map<Integer, Long> now = GuiOps.totals(p.openContainer, p, keys);
-            if (!now.equals(before)) return fail("item totals changed: " + GuiOps.diff(before, now, keys));
+            if (!totalsMatch(before, now)) return fail("item totals changed: " + looseDiff(before, now));
             if (p.inventory.getItemStack() != null) return fail("cursor not empty after deposit");
             Carried still = carried.get(invIndex);
             ItemStack inCarry = p.inventory.getStackInSlot(invIndex);
@@ -957,9 +1017,8 @@ public final class Run {
             EntityClientPlayerMP p = mc.thePlayer;
             if (p.inventory.getItemStack() != null) return fail("cursor not empty before closing chest #" + id);
             Map<Integer, Long> now = GuiOps.totals(p.openContainer, p, keys);
-            if (!now.equals(openTotals)) {
-                return fail(
-                    "item totals in chest #" + id + " + inventory changed: " + GuiOps.diff(openTotals, now, keys));
+            if (!totalsMatch(openTotals, now)) {
+                return fail("item totals in chest #" + id + " + inventory changed: " + looseDiff(openTotals, now));
             }
             for (int i = 0; i < 36; i++) {
                 ItemStack st = p.inventory.getStackInSlot(i);
@@ -976,7 +1035,7 @@ public final class Run {
                     ek = openInvKeys[i];
                     en = openInvCounts[i];
                 }
-                if (k != ek || n != en) {
+                if (keys.loose(k) != keys.loose(ek) || n != en) {
                     return fail(
                         "inventory slot " + i
                             + " holds "
@@ -1007,6 +1066,25 @@ public final class Run {
             openInvCounts[i] = st == null ? 0 : st.stackSize;
         }
         carriedAtOpen = new TreeSet<>(carried.keySet());
+    }
+
+    /**
+     * Totals match exactly, or match by loose key: an item changed its own NBT or durability while we looked (logged,
+     * allowed, because every count still matches).
+     */
+    private boolean totalsMatch(Map<Integer, Long> before, Map<Integer, Long> now) {
+        if (now.equals(before)) return true;
+        if (GuiOps.looseTotals(now, keys)
+            .equals(GuiOps.looseTotals(before, keys))) {
+            trace.log("Note: an item changed its own NBT/durability (counts unchanged, allowed): "
+                + GuiOps.diff(before, now, keys));
+            return true;
+        }
+        return false;
+    }
+
+    private String looseDiff(Map<Integer, Long> before, Map<Integer, Long> now) {
+        return GuiOps.diff(GuiOps.looseTotals(before, keys), GuiOps.looseTotals(now, keys), keys);
     }
 
     private Outcome fail(String why) {
@@ -1124,8 +1202,8 @@ public final class Run {
             for (Map.Entry<Integer, Long> e : a.totals()
                 .entrySet()) afterTotals.merge(e.getKey(), e.getValue(), Long::sum);
             ChestModel exp = plan.expected.get(id);
-            if (exp != null && !exp.totals()
-                .equals(a.totals())) perChest.add("#" + id);
+            if (exp != null && !GuiOps.looseTotals(exp.totals(), keys)
+                .equals(GuiOps.looseTotals(a.totals(), keys))) perChest.add("#" + id);
         }
         for (Carried c : carried.values()) afterTotals.merge(c.key, (long) c.count, Long::sum);
         Set<Integer> unverified = new TreeSet<>(touched);
@@ -1133,10 +1211,21 @@ public final class Run {
         if (!unverified.isEmpty()) {
             trace.warn("Could not re-read chests " + unverified + "; the check below covers only the others.");
         }
-        if (!beforeTotals.equals(afterTotals)) {
-            trace.error(
-                "VERIFY FAILED: item totals in the touched chests changed: " + diffLabels(beforeTotals, afterTotals));
+        boolean complete = tripsSkipped == 0 && unreachable.isEmpty() && tripsDone == plan.trips.size();
+        Map<Integer, Long> lb = GuiOps.looseTotals(beforeTotals, keys), la = GuiOps.looseTotals(afterTotals, keys);
+        if (!lb.equals(la)) {
+            trace.error("VERIFY FAILED: item totals in the touched chests changed: " + diffLabels(lb, la));
             failure = "verify failed";
+        } else if (!complete) {
+            // Skipped trips and returned stacks leave chests different from the full plan; that is expected.
+            trace.info(
+                "Verify passed: nothing lost. " + tripsDone
+                    + " of "
+                    + plan.trips.size()
+                    + " trips ran"
+                    + (unreachable.isEmpty() ? "" : "; unreachable chests " + unreachable)
+                    + ". Run again to finish the rest.");
+            if (!perChest.isEmpty()) trace.log("Chests not yet as planned: " + perChest);
         } else if (!perChest.isEmpty()) {
             trace.warn(
                 "Verify: no items lost, but chests " + perChest + " differ from the plan (something changed them?).");
@@ -1200,6 +1289,21 @@ public final class Run {
             at = pos(id);
         }
         return order;
+    }
+
+    /** "slot:key:count ..." for every used slot; tools/replay-trace.sh reads these lines back. */
+    private static String contentsLine(ChestModel m) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < m.size(); i++) {
+            if (m.keys[i] == ChestModel.EMPTY) continue;
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(i)
+                .append(':')
+                .append(m.keys[i])
+                .append(':')
+                .append(m.counts[i]);
+        }
+        return sb.length() == 0 ? "(empty)" : sb.toString();
     }
 
     private static int countUsed(ChestModel m) {

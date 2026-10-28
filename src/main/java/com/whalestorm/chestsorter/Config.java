@@ -1,18 +1,36 @@
 package com.whalestorm.chestsorter;
 
 import java.io.File;
+import java.util.Arrays;
 
+import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.config.Property;
 
-/** All settings, read from config/chestsorter.cfg. Defaults favour safety over speed. */
+import com.whalestorm.chestsorter.core.Taxonomy;
+
+/**
+ * All settings, in config/chestsorter.cfg. Editable in game: Mods list → Chest Sorter → Config, the settings key, or
+ * /cs config. Changes apply to the next run. Defaults favour safety over speed.
+ */
 public class Config {
 
+    public static final String CAT_SORT = "sorting";
     public static final String CAT_MOVE = "movement";
     public static final String CAT_SAFETY = "safety";
     public static final String CAT_DEBUG = "debug";
+    /** Categories shown in the settings screen, in order. */
+    public static final String[] GUI_CATEGORIES = { CAT_SORT, CAT_MOVE, CAT_SAFETY, CAT_DEBUG };
+    private static final String LANG = "chestsorter.cfg.";
 
-    /** How far (blocks) the scanner looks for containers. */
+    // sorting
     public static int scanRadius = 16;
+    /** 0 = only minimise moves; higher = tidier layout (big categories together, related ones near). */
+    public static double layoutWeight = 1.0;
+    /** Smallest group of stacks that gets a chest of its own when there are spare chests. */
+    public static int minStacksForOwnChest = 6;
+    /** Category group lines, see {@link Taxonomy}. */
+    public static String[] groups = Taxonomy.DEFAULT_GROUPS.clone();
 
     // movement
     public static boolean walking = true;
@@ -31,21 +49,26 @@ public class Config {
     public static int hostileRadius = 8;
     public static double minHealthFraction = 0.5;
     public static int maxTrips = 300;
-    /** 0 = only minimise moves; higher = tidier layout (big categories together, related ones near). */
-    public static double layoutWeight = 1.0;
 
     // debug
     public static boolean traceFile = true;
     public static boolean verboseChat = false;
 
-    /** Bump when defaults change in a way existing config files should pick up. */
-    private static final int CONFIG_VERSION = 2;
+    /** Bump when defaults or layout change in a way existing config files should pick up. */
+    private static final int CONFIG_VERSION = 3;
 
-    public static void synchronizeConfiguration(File configFile) {
-        Configuration c = new Configuration(configFile);
+    /** The loaded file; null until {@link #init}. */
+    public static Configuration config;
 
-        // Forge keeps whatever value a config file already has, so new defaults never reach existing files.
-        // Version 2 made runs faster: reset just those keys in older files; everything else is kept.
+    public static void init(File configFile) {
+        config = new Configuration(configFile);
+        migrate();
+        sync();
+    }
+
+    /** Older files: v2 made runs faster (reset those keys); v3 moved sorting settings into their own category. */
+    private static void migrate() {
+        Configuration c = config;
         int version = c.get(Configuration.CATEGORY_GENERAL, "configVersion", 1)
             .getInt();
         if (version < 2) {
@@ -56,85 +79,221 @@ public class Config {
             c.getCategory(CAT_SAFETY)
                 .remove("verifyEveryTransfer");
         }
+        if (version < 3) {
+            move(Configuration.CATEGORY_GENERAL, CAT_SORT, "scanRadius");
+            move(Configuration.CATEGORY_GENERAL, CAT_SORT, "layoutWeight");
+            move(CAT_SAFETY, CAT_SORT, "maxTrips");
+        }
         c.get(Configuration.CATEGORY_GENERAL, "configVersion", CONFIG_VERSION)
             .set(CONFIG_VERSION);
+    }
 
+    private static void move(String from, String to, String key) {
+        ConfigCategory f = config.getCategory(from);
+        if (!f.containsKey(key)) return;
+        Property p = f.remove(key);
+        ConfigCategory t = config.getCategory(to);
+        if (!t.containsKey(key)) t.put(key, p);
+    }
+
+    /** Reads every value from the loaded file (after the settings screen changed it, too) and saves if needed. */
+    public static void sync() {
+        Configuration c = config;
+        if (c == null) return;
+
+        c.setCategoryComment(CAT_SORT, "How items are grouped and which chests they go to.");
+        c.setCategoryLanguageKey(CAT_SORT, LANG + "cat." + CAT_SORT);
         scanRadius = c.getInt(
             "scanRadius",
-            Configuration.CATEGORY_GENERAL,
-            scanRadius,
+            CAT_SORT,
+            16,
             1,
             64,
-            "Container scan radius in blocks.");
+            "Use containers within this many blocks of where you start.",
+            LANG + "scanRadius");
+        minStacksForOwnChest = c.getInt(
+            "minStacksForOwnChest",
+            CAT_SORT,
+            6,
+            1,
+            1728,
+            "With spare chests, a category (or group) gets a chest of its own once it has at least this many stacks. "
+                + "Lower = more, narrower chests. Higher = broader chests (whole groups like 'dusts', 'metals').",
+            LANG + "minStacksForOwnChest");
+        layoutWeight = dbl(
+            CAT_SORT,
+            "layoutWeight",
+            1.0,
+            0.0,
+            10.0,
+            "How much a tidy layout matters against moving fewer stacks. 0 = keep chests' current roles. 1 = balanced. "
+                + "Higher = each category's chests together and related ones next to each other, even if more moves.");
+        Property g = c.get(
+            CAT_SORT,
+            "groups",
+            Taxonomy.DEFAULT_GROUPS,
+            "Category groups, one per line: 'name: member, prefix*, ...'. Lines are in layout order: neighbouring "
+                + "groups go in neighbouring chests. Members are category names from /cs item (ore-dictionary "
+                + "prefixes like dustTiny, or mod:<modid>:<tab>); a trailing * matches any name starting with it. "
+                + "Anything not listed is grouped by mod, or goes to 'misc' when chests run short.");
+        g.setLanguageKey(LANG + "groups");
+        groups = g.getStringList();
+        maxTrips = c.getInt("maxTrips", CAT_SORT, 300, 1, 10000, "Most carry trips per run.", LANG + "maxTrips");
+        c.setCategoryPropertyOrder(
+            CAT_SORT,
+            Arrays.asList("scanRadius", "minStacksForOwnChest", "layoutWeight", "maxTrips", "groups"));
 
+        c.setCategoryComment(CAT_MOVE, "Walking to chests.");
+        c.setCategoryLanguageKey(CAT_MOVE, LANG + "cat." + CAT_MOVE);
         walking = c.getBoolean(
             "walking",
             CAT_MOVE,
-            walking,
-            "Walk to chests out of reach. If false, only chests within reach of where you stand are used.");
-        sprint = c.getBoolean("sprint", CAT_MOVE, sprint, "Sprint on straight stretches when food allows.");
-        reach = c.getFloat("reach", CAT_MOVE, (float) reach, 2.0f, 5.0f, "Max distance (eye to chest centre) to open.");
-        maxPathNodes = c.getInt("maxPathNodes", CAT_MOVE, maxPathNodes, 1000, 200000, "A* search limit per path.");
-        stuckTicks = c.getInt("stuckTicks", CAT_MOVE, stuckTicks, 10, 400, "Ticks without progress before re-pathing.");
-        maxRepaths = c.getInt("maxRepaths", CAT_MOVE, maxRepaths, 0, 20, "Re-path attempts before giving up a chest.");
+            true,
+            "Walk to chests out of reach. Off: only chests within reach of where you stand are used.",
+            LANG + "walking");
+        sprint = c.getBoolean("sprint", CAT_MOVE, true, "Sprint on straight stretches when food allows.", LANG + "sprint");
+        reach = dbl(CAT_MOVE, "reach", 4.0, 2.0, 5.0, "Max distance (eye to chest centre) to open a chest.");
+        maxPathNodes = c.getInt(
+            "maxPathNodes",
+            CAT_MOVE,
+            20000,
+            1000,
+            200000,
+            "Path search limit per walk. Raise for big, mazy rooms.",
+            LANG + "maxPathNodes");
+        stuckTicks = c.getInt(
+            "stuckTicks",
+            CAT_MOVE,
+            40,
+            10,
+            400,
+            "Ticks without progress before finding a new path.",
+            LANG + "stuckTicks");
+        maxRepaths = c.getInt(
+            "maxRepaths",
+            CAT_MOVE,
+            3,
+            0,
+            20,
+            "New paths to try before skipping a chest.",
+            LANG + "maxRepaths");
 
+        c.setCategoryComment(CAT_SAFETY, "Pacing and when to stop.");
+        c.setCategoryLanguageKey(CAT_SAFETY, LANG + "cat." + CAT_SAFETY);
         clickDelayTicks = c.getInt(
             "clickDelayTicks",
             CAT_SAFETY,
-            clickDelayTicks,
+            1,
             1,
             40,
-            "Ticks between stack transfers (1 = one stack per tick).");
+            "Ticks between stack transfers (1 = one stack per tick).",
+            LANG + "clickDelayTicks");
         settleTicks = c.getInt(
             "settleTicks",
             CAT_SAFETY,
-            settleTicks,
+            4,
             2,
             40,
-            "Ticks to wait for the server before checking a chest before it closes. Raise on laggy servers.");
-        openTimeoutTicks = c
-            .getInt("openTimeoutTicks", CAT_SAFETY, openTimeoutTicks, 10, 400, "Ticks to wait for a chest to open.");
+            "Ticks to wait for the server before checking a chest before it closes. Raise on laggy servers.",
+            LANG + "settleTicks");
+        openTimeoutTicks = c.getInt(
+            "openTimeoutTicks",
+            CAT_SAFETY,
+            60,
+            10,
+            400,
+            "Ticks to wait for a chest to open.",
+            LANG + "openTimeoutTicks");
         verifyEveryTransfer = c.getBoolean(
             "verifyEveryTransfer",
             CAT_SAFETY,
-            verifyEveryTransfer,
-            "Also wait settleTicks and check after every single transfer, not only before each chest closes. Much slower.");
-        hostileRadius = c
-            .getInt("hostileRadius", CAT_SAFETY, hostileRadius, 0, 32, "Stop if a hostile mob is this close. 0 = off.");
-        minHealthFraction = c.getFloat(
-            "minHealthFraction",
-            CAT_SAFETY,
-            (float) minHealthFraction,
-            0.0f,
-            1.0f,
-            "Stop if health falls below this fraction of max.");
+            false,
+            "Also wait settleTicks and check after every single transfer, not only before each chest closes. Slower.",
+            LANG + "verifyEveryTransfer");
         finalRecheck = c.getBoolean(
             "finalRecheck",
             CAT_SAFETY,
-            finalRecheck,
+            false,
             "After sorting, walk back and re-open every touched chest to compare totals. Each chest is already checked "
-                + "before it closes, so this is an extra, slower check.");
-        maxTrips = c.getInt("maxTrips", CAT_SAFETY, maxTrips, 1, 10000, "Max carry trips per run.");
-        layoutWeight = c.getFloat(
-            "layoutWeight",
-            Configuration.CATEGORY_GENERAL,
-            (float) layoutWeight,
-            0.0f,
-            10.0f,
-            "How much a tidy layout matters against moving fewer stacks. 0 = keep chests' current roles, only move what "
-                + "is out of place. 1 = balanced. Higher = put each category's chests together and related categories "
-                + "(ore > crushed > dust, ingot > nugget, ...) next to each other, even if more stacks move.");
+                + "before it closes, so this is an extra, slower check.",
+            LANG + "finalRecheck");
+        hostileRadius = c.getInt(
+            "hostileRadius",
+            CAT_SAFETY,
+            8,
+            0,
+            32,
+            "Stop if a hostile mob is this close. 0 = off.",
+            LANG + "hostileRadius");
+        minHealthFraction = dbl(
+            CAT_SAFETY,
+            "minHealthFraction",
+            0.5,
+            0.0,
+            1.0,
+            "Stop if health falls below this fraction of max.");
+        c.setCategoryPropertyOrder(
+            CAT_SAFETY,
+            Arrays.asList(
+                "clickDelayTicks",
+                "settleTicks",
+                "openTimeoutTicks",
+                "verifyEveryTransfer",
+                "finalRecheck",
+                "hostileRadius",
+                "minHealthFraction"));
 
+        c.setCategoryComment(CAT_DEBUG, "Trace files and chat output.");
+        c.setCategoryLanguageKey(CAT_DEBUG, LANG + "cat." + CAT_DEBUG);
         traceFile = c.getBoolean(
             "traceFile",
             CAT_DEBUG,
-            traceFile,
-            "Write every step, click and check of each run to .minecraft/chestsorter/trace-<time>.log.");
-        verboseChat = c
-            .getBoolean("verboseChat", CAT_DEBUG, verboseChat, "Print every step in chat, not just results.");
+            true,
+            "Write every step, click and check of each run to .minecraft/chestsorter/trace-<time>.log.",
+            LANG + "traceFile");
+        verboseChat = c.getBoolean(
+            "verboseChat",
+            CAT_DEBUG,
+            false,
+            "Print every step in chat, not just results.",
+            LANG + "verboseChat");
 
-        if (c.hasChanged()) {
-            c.save();
+        if (c.hasChanged()) c.save();
+    }
+
+    /** Saves one boolean right away (used by /cs verbose). */
+    public static void setBoolean(String category, String key, boolean value) {
+        if (config == null) return;
+        config.getCategory(category)
+            .get(key)
+            .set(value);
+        sync();
+    }
+
+    /**
+     * A number setting stored as a real double (older files kept these as text, which the settings screen can't
+     * check): converts the old entry, keeping its value.
+     */
+    private static double dbl(String cat, String key, double def, double min, double max, String comment) {
+        ConfigCategory cc = config.getCategory(cat);
+        Double old = null;
+        if (cc.containsKey(key) && cc.get(key)
+            .getType() != Property.Type.DOUBLE) {
+            try {
+                old = Double.parseDouble(
+                    cc.get(key)
+                        .getString()
+                        .trim());
+            } catch (NumberFormatException e) {
+                ChestSorter.LOG.warn("Setting {} had an unreadable value; using the default", key);
+            }
+            cc.remove(key);
         }
+        Property p = config
+            .get(cat, key, def, comment + " [range: " + min + " ~ " + max + ", default: " + def + "]", min, max);
+        p.setLanguageKey(LANG + key);
+        if (old != null) p.set(old);
+        double v = p.getDouble(def);
+        return v < min ? min : (v > max ? max : v);
     }
 }

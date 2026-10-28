@@ -13,7 +13,7 @@ import com.whalestorm.chestsorter.Config;
 public final class SorterCommand extends CommandBase {
 
     private static final List<String> SUBS = Arrays
-        .asList("run", "plan", "stop", "status", "scan", "item", "verbose", "help");
+        .asList("run", "plan", "stop", "status", "scan", "item", "config", "verbose", "help");
 
     @Override
     public String getCommandName() {
@@ -28,7 +28,7 @@ public final class SorterCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/chestsorter <run|plan|stop|status|scan|item|verbose|help>";
+        return "/chestsorter <run|plan|stop|status|scan|item|config|verbose|help>";
     }
 
     @Override
@@ -70,9 +70,13 @@ public final class SorterCommand extends CommandBase {
             case "item":
                 c.explainHeld();
                 break;
+            case "config":
+            case "settings":
+                c.openSettingsWhenScreenCloses();
+                break;
             case "verbose":
-                Config.verboseChat = !Config.verboseChat;
-                Trace.chat("Verbose chat " + (Config.verboseChat ? "on" : "off") + " (until restart).");
+                Config.setBoolean(Config.CAT_DEBUG, "verboseChat", !Config.verboseChat);
+                Trace.chat("Verbose chat " + (Config.verboseChat ? "on" : "off") + " (saved).");
                 break;
             default:
                 help();
@@ -87,7 +91,8 @@ public final class SorterCommand extends CommandBase {
         Trace.chat(g + "/chestsorter stop - stop now; carried items stay in your inventory");
         Trace.chat(g + "/chestsorter status - what it is doing");
         Trace.chat(g + "/chestsorter scan - list nearby chests only");
-        Trace.chat(g + "/chestsorter item - show the held item's category");
+        Trace.chat(g + "/chestsorter item - show the held item's category and group");
+        Trace.chat(g + "/chestsorter config - open the settings (also: Mods list > Config, or the settings key)");
         Trace.chat(g + "/chestsorter verbose - print every step in chat");
         Trace.chat(g + "Every run writes .minecraft/chestsorter/trace-<time>.log");
     }

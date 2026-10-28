@@ -27,6 +27,11 @@ import cpw.mods.fml.common.registry.GameRegistry;
  * value and equal NBT (vanilla's ItemStack.areItemStackTagsEqual). That is at least as strict as the rule vanilla uses
  * to merge stacks, so stacks with one key always merge, and the totals checks compare like with like.
  *
+ * Each key also has a loose key: same Item, and same damage only for items with subtypes; NBT ignored. Safety checks
+ * compare loose keys, because some items change their own NBT or durability while sitting in the inventory (a
+ * Tinkers' Construct tool did, which stopped a run with "Alumite Hammer 1 -> 0, Alumite Hammer 0 -> 1"). Counts per
+ * slot are still checked exactly. A loose key is the first strict key seen with that identity, so labels work.
+ *
  * One instance per run; keys are not stable between runs.
  */
 public final class ItemKeys {
@@ -39,6 +44,9 @@ public final class ItemKeys {
     private final Map<Item, List<Integer>> byItem = new IdentityHashMap<>();
     private final Map<Integer, ItemInfo> infos = new HashMap<>();
     private final Map<Integer, List<String>> oreNames = new HashMap<>();
+    /** strict key → loose key. */
+    private final List<Integer> looseOfKey = new ArrayList<>();
+    private final Map<Item, Map<Integer, Integer>> looseByItem = new IdentityHashMap<>();
 
     /** @return the key for this stack, or {@link ChestModel#EMPTY} for null / empty stacks. */
     public int keyOf(ItemStack stack) {
@@ -57,6 +65,18 @@ public final class ItemKeys {
         proto.stackSize = 1;
         prototypes.add(proto);
         candidates.add(key);
+        int meta = hasSubtypes(stack) ? stack.getItemDamage() : 0;
+        Map<Integer, Integer> metas = looseByItem.get(stack.getItem());
+        if (metas == null) {
+            metas = new HashMap<>();
+            looseByItem.put(stack.getItem(), metas);
+        }
+        Integer loose = metas.get(meta);
+        if (loose == null) {
+            loose = key;
+            metas.put(meta, key);
+        }
+        looseOfKey.add(loose);
         List<String> names = oreNamesOf(stack);
         oreNames.put(key, names);
         infos.put(
@@ -67,6 +87,25 @@ public final class ItemKeys {
                 categorizer.categorize(names, modIdOf(stack), tabOf(stack)),
                 stack.getMaxStackSize()));
         return key;
+    }
+
+    /** Loose key for a strict key ({@link ChestModel#EMPTY} stays EMPTY). */
+    public int loose(int key) {
+        if (key < 0 || key >= looseOfKey.size()) return key;
+        return looseOfKey.get(key);
+    }
+
+    /** Loose key of a stack. */
+    public int looseOf(ItemStack stack) {
+        return loose(keyOf(stack));
+    }
+
+    private static boolean hasSubtypes(ItemStack stack) {
+        try {
+            return stack.getHasSubtypes();
+        } catch (Throwable t) {
+            return true; // unknown: keep damage in the key (stricter)
+        }
     }
 
     public static boolean same(ItemStack a, ItemStack b) {
