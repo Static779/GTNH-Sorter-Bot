@@ -77,7 +77,8 @@ public final class PlanChecker {
                             problems.add(where + ": pick " + op.pick + " put in while not carried");
                             continue;
                         }
-                        if (p.chest == v.chest) problems.add(where + ": pick " + op.pick + " put back where it came from");
+                        if (p.chest == v.chest)
+                            problems.add(where + ": pick " + op.pick + " put back where it came from");
                         ItemInfo info = items.get(p.key);
                         if (info == null) {
                             problems.add(where + ": no item info for key " + p.key);
@@ -105,7 +106,8 @@ public final class PlanChecker {
                 }
             }
             for (int i = 0; i < state.length; i++) {
-                if (state[i] != 2) problems.add(where + ": pick " + i + (state[i] == 0 ? " never taken" : " never put in"));
+                if (state[i] != 2)
+                    problems.add(where + ": pick " + i + (state[i] == 0 ? " never taken" : " never put in"));
             }
         }
 

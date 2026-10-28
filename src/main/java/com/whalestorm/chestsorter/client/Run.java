@@ -1320,8 +1320,12 @@ public final class Run {
                 if (carryIndex < 0) {
                     // Only when stacks meant for an unreachable chest are still carried: leave this one for later.
                     skipPick.add(index);
-                    trace.warn("No free carry slot (stacks from a skipped chest are still carried); leaving "
-                        + pick.count + " x " + keys.label(pick.key) + " in #" + src);
+                    trace.warn(
+                        "No free carry slot (stacks from a skipped chest are still carried); leaving " + pick.count
+                            + " x "
+                            + keys.label(pick.key)
+                            + " in #"
+                            + src);
                     return Outcome.DONE;
                 }
                 carrySlot = GuiOps.playerSlot(p.openContainer, p, carryIndex);
