@@ -1,0 +1,50 @@
+# Runs the full build with --continue and reports every failure as a check-run annotation,
+# plus the diff spotlessApply would make. Annotations are readable through the GitHub API,
+# so build problems can be diagnosed without downloading logs. Safe to delete once not needed.
+name: Diagnose build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ ci-diagnose ]
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDKs (same versions as GTNH's build-and-test)
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: |
+            8
+            17
+            21
+            25
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Build with --continue
+        shell: bash
+        run: |
+          set +e
+          chmod +x gradlew
+          xvfb-run --server-args="-screen 0 1366x768x24" ./gradlew --continue --stacktrace build > build.log 2>&1
+          echo "exit=$?" >> "$GITHUB_ENV"
+          ./gradlew spotlessApply > spotless.log 2>&1
+          git diff > spotless.diff
+          true
+
+      - name: Report failures as annotations
+        shell: bash
+        run: |
+          esc() { python3 -c 'import sys;d=sys.stdin.read()[:60000];print(d.replace("%","%25").replace("\r","%0D").replace("\n","%0A"))'; }
+          echo "::notice title=build exit code::${exit}"
+          grep -n -E '^\* What went wrong|FAILED|error:|warning: \[|Checkstyle|violation' build.log | head -200 | esc | sed 's/^/::error title=build failures::/'
+          awk '/^\* What went wrong/{p=1} p&&/^\* Try:/{p=0} p' build.log | head -400 | esc | sed 's/^/::error title=what went wrong::/'
+          if [ -s spotless.diff ]; then esc < spotless.diff | sed 's/^/::error title=spotless diff::/'; else echo "::notice title=spotless diff::(no formatting changes)"; fi
+          tail -60 build.log | esc | sed 's/^/::warning title=build log tail::/'
