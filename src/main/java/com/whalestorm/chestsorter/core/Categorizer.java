@@ -31,8 +31,7 @@ public final class Categorizer {
         Set<String> unique = new TreeSet<>();
         for (String p : knownPrefixes) {
             if (p != null && !p.trim()
-                .isEmpty()
-                && !p.startsWith("#")) unique.add(p.trim());
+                .isEmpty() && !p.startsWith("#")) unique.add(p.trim());
         }
         prefixes = new ArrayList<>(unique);
         prefixes.sort((a, b) -> a.length() != b.length() ? b.length() - a.length() : a.compareTo(b));
@@ -44,15 +43,17 @@ public final class Categorizer {
             for (String name : oreNames) {
                 String p = prefixOf(name);
                 if (p == null) continue;
-                if (best == null || p.length() > best.length() || (p.length() == best.length() && p.compareTo(best) < 0)) {
+                if (best == null || p.length() > best.length()
+                    || (p.length() == best.length() && p.compareTo(best) < 0)) {
                     best = p;
                 }
             }
         }
         if (best != null) return best;
         if (modId != null && !modId.trim()
-            .isEmpty()) return "mod:" + modId.trim()
-                .toLowerCase(Locale.ROOT);
+            .isEmpty()) return "mod:"
+                + modId.trim()
+                    .toLowerCase(Locale.ROOT);
         return MISC;
     }
 

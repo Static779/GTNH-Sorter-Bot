@@ -82,8 +82,9 @@ public final class SorterController {
             Trace.chat("Already running: " + run.status());
             return;
         }
-        Trace.chat((mode == Run.Mode.PLAN_ONLY ? "Planning (nothing will be moved)" : "Sorting") + ". Press the key, Esc, "
-            + "or any movement key to stop.");
+        Trace.chat(
+            (mode == Run.Mode.PLAN_ONLY ? "Planning (nothing will be moved)" : "Sorting") + ". Press the key, Esc, "
+                + "or any movement key to stop.");
         run = new Run(mode, trace);
         if (!run.begin() || run.finished()) run = null;
     }
@@ -123,8 +124,13 @@ public final class SorterController {
         int key = k.keyOf(held);
         ItemInfo info = k.info(key);
         Trace.chat(info.label + EnumChatFormatting.GRAY + " -> " + EnumChatFormatting.RESET + info.category);
-        Trace.chat(EnumChatFormatting.GRAY + "ore names: " + k.oreNames(key) + ", mod: " + ItemKeys.modIdOf(held)
-            + ", max stack: " + info.maxStack);
+        Trace.chat(
+            EnumChatFormatting.GRAY + "ore names: "
+                + k.oreNames(key)
+                + ", mod: "
+                + ItemKeys.modIdOf(held)
+                + ", max stack: "
+                + info.maxStack);
     }
 
     public Trace trace() {

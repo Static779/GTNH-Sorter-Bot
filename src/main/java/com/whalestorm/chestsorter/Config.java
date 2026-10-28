@@ -55,13 +55,8 @@ public class Config {
         stuckTicks = c.getInt("stuckTicks", CAT_MOVE, stuckTicks, 10, 400, "Ticks without progress before re-pathing.");
         maxRepaths = c.getInt("maxRepaths", CAT_MOVE, maxRepaths, 0, 20, "Re-path attempts before giving up a chest.");
 
-        clickDelayTicks = c.getInt(
-            "clickDelayTicks",
-            CAT_SAFETY,
-            clickDelayTicks,
-            1,
-            40,
-            "Ticks between stack transfers.");
+        clickDelayTicks = c
+            .getInt("clickDelayTicks", CAT_SAFETY, clickDelayTicks, 1, 40, "Ticks between stack transfers.");
         settleTicks = c.getInt(
             "settleTicks",
             CAT_SAFETY,
@@ -69,19 +64,15 @@ public class Config {
             2,
             40,
             "Ticks to wait for the server before checking a result. Raise on laggy servers.");
-        openTimeoutTicks = c.getInt(
-            "openTimeoutTicks",
-            CAT_SAFETY,
-            openTimeoutTicks,
-            10,
-            400,
-            "Ticks to wait for a chest to open.");
+        openTimeoutTicks = c
+            .getInt("openTimeoutTicks", CAT_SAFETY, openTimeoutTicks, 10, 400, "Ticks to wait for a chest to open.");
         verifyEveryTransfer = c.getBoolean(
             "verifyEveryTransfer",
             CAT_SAFETY,
             verifyEveryTransfer,
             "Wait settleTicks and check item totals after every single stack transfer. Slower, strongly recommended.");
-        hostileRadius = c.getInt("hostileRadius", CAT_SAFETY, hostileRadius, 0, 32, "Stop if a hostile mob is this close. 0 = off.");
+        hostileRadius = c
+            .getInt("hostileRadius", CAT_SAFETY, hostileRadius, 0, 32, "Stop if a hostile mob is this close. 0 = off.");
         minHealthFraction = c.getFloat(
             "minHealthFraction",
             CAT_SAFETY,
@@ -96,7 +87,8 @@ public class Config {
             CAT_DEBUG,
             traceFile,
             "Write every step, click and check of each run to .minecraft/chestsorter/trace-<time>.log.");
-        verboseChat = c.getBoolean("verboseChat", CAT_DEBUG, verboseChat, "Print every step in chat, not just results.");
+        verboseChat = c
+            .getBoolean("verboseChat", CAT_DEBUG, verboseChat, "Print every step in chat, not just results.");
 
         if (c.hasChanged()) {
             c.save();

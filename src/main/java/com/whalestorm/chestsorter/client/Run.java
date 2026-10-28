@@ -359,14 +359,17 @@ public final class Run {
         List<String> problems = PlanChecker.check(chests, plan, items, carry);
 
         trace.log("Item keys:");
-        for (ItemInfo i : items.values()) trace.log("  key " + i.key + ": " + i + " max " + i.maxStack + " ore " + keys.oreNames(i.key));
+        for (ItemInfo i : items.values())
+            trace.log("  key " + i.key + ": " + i + " max " + i.maxStack + " ore " + keys.oreNames(i.key));
         trace.info("Plan: " + plan.trips.size() + " trips, " + plan.stackMoves() + " stacks to move.");
         for (Map.Entry<Integer, String> e : plan.chestCategory.entrySet()) {
             Container c = containers.get(e.getKey());
             trace.info("  " + c.name + " at " + c.x + " " + c.y + " " + c.z + " -> " + e.getValue());
         }
         if (!plan.unassigned.isEmpty()) {
-            trace.warn("No chest for: " + plan.unassigned + ". Those items stay where they are. Add empty chests to sort them.");
+            trace.warn(
+                "No chest for: " + plan.unassigned
+                    + ". Those items stay where they are. Add empty chests to sort them.");
         }
         if (plan.stacksLeftNoRoom > 0) {
             trace.warn(plan.stacksLeftNoRoom + " stacks stay where they are: their category's chests are full.");
@@ -568,7 +571,9 @@ public final class Run {
                     }
                     if (ticks > Config.openTimeoutTicks) {
                         guiMode = Safety.GUI_NONE;
-                        failure = "chest #" + id + " did not open within " + Config.openTimeoutTicks
+                        failure = "chest #" + id
+                            + " did not open within "
+                            + Config.openTimeoutTicks
                             + " ticks (blocked lid, protected, or not a chest?)";
                         return Outcome.FAILED;
                     }
@@ -670,8 +675,14 @@ public final class Run {
                     .get(pick.slot);
                 ItemStack st = chestSlot.getStack();
                 if (keys.keyOf(st) != pick.key || st.stackSize != pick.count) {
-                    return fail("slot " + pick.slot + " holds " + GuiOps.describe(st, keys) + ", expected " + pick.count
-                        + " x " + keys.label(pick.key));
+                    return fail(
+                        "slot " + pick.slot
+                            + " holds "
+                            + GuiOps.describe(st, keys)
+                            + ", expected "
+                            + pick.count
+                            + " x "
+                            + keys.label(pick.key));
                 }
                 carryIndex = -1;
                 for (int i : carrySlots) {
@@ -694,13 +705,22 @@ public final class Run {
                 }
                 click(carrySlot);
                 if (p.inventory.getItemStack() != null) {
-                    return fail("put-down left " + GuiOps.describe(p.inventory.getItemStack(), keys) + " on the cursor");
+                    return fail(
+                        "put-down left " + GuiOps.describe(p.inventory.getItemStack(), keys) + " on the cursor");
                 }
                 carried.put(carryIndex, new Carried(pick.key, pick.count, src));
                 pickToSlot.put(index, carryIndex);
                 touched.add(src);
                 trace.step(
-                    "Took " + pick.count + " x " + keys.label(pick.key) + " #" + src + "[" + pick.slot + "] -> inv " + carryIndex);
+                    "Took " + pick.count
+                        + " x "
+                        + keys.label(pick.key)
+                        + " #"
+                        + src
+                        + "["
+                        + pick.slot
+                        + "] -> inv "
+                        + carryIndex);
                 phase = 1;
                 wait = Config.verifyEveryTransfer ? Config.settleTicks : 0;
                 return Outcome.RUNNING;
@@ -709,7 +729,8 @@ public final class Run {
             if (!requireOpen(src)) return Outcome.FAILED;
             Map<Integer, Long> now = GuiOps.totals(p.openContainer, p, keys);
             if (!now.equals(before)) return fail("item totals changed: " + GuiOps.diff(before, now, keys));
-            if (chestSlot.getStack() != null) return fail("source slot not empty after pickup: " + GuiOps.describe(chestSlot.getStack(), keys));
+            if (chestSlot.getStack() != null)
+                return fail("source slot not empty after pickup: " + GuiOps.describe(chestSlot.getStack(), keys));
             ItemStack inCarry = carrySlot.getStack();
             if (keys.keyOf(inCarry) != pick.key || inCarry.stackSize != pick.count) {
                 return fail("carry slot holds " + GuiOps.describe(inCarry, keys));
@@ -761,8 +782,15 @@ public final class Run {
                 if (carrySlot == null) return fail("inventory slot " + invIndex + " not shown in this chest screen");
                 ItemStack mine = carrySlot.getStack();
                 if (keys.keyOf(mine) != c.key || mine.stackSize != c.count) {
-                    return fail("inventory slot " + invIndex + " holds " + GuiOps.describe(mine, keys) + ", expected "
-                        + c.count + " x " + keys.label(c.key) + "; leaving it alone");
+                    return fail(
+                        "inventory slot " + invIndex
+                            + " holds "
+                            + GuiOps.describe(mine, keys)
+                            + ", expected "
+                            + c.count
+                            + " x "
+                            + keys.label(c.key)
+                            + "; leaving it alone");
                 }
                 if (p.inventory.getItemStack() != null) return fail("cursor not empty before deposit");
                 before = GuiOps.totals(p.openContainer, p, keys);
@@ -795,7 +823,8 @@ public final class Run {
                 }
                 if (p.inventory.getItemStack() != null) {
                     click(carrySlot); // remainder back into its (now empty) carry slot
-                    if (p.inventory.getItemStack() != null) return fail("remainder could not go back to inventory slot " + invIndex);
+                    if (p.inventory.getItemStack() != null)
+                        return fail("remainder could not go back to inventory slot " + invIndex);
                 }
                 ItemStack left = carrySlot.getStack();
                 int leftCount = left == null ? 0 : left.stackSize;
@@ -807,8 +836,13 @@ public final class Run {
                     stacksMoved += leftCount == 0 ? 1 : 0;
                     itemsMoved += stored;
                 }
-                trace.step((returning ? "Returned " : "Stored ") + stored + " x " + keys.label(c.key) + " into #" + target
-                    + (leftCount > 0 ? " (" + leftCount + " did not fit, kept in inv " + invIndex + ")" : ""));
+                trace.step(
+                    (returning ? "Returned " : "Stored ") + stored
+                        + " x "
+                        + keys.label(c.key)
+                        + " into #"
+                        + target
+                        + (leftCount > 0 ? " (" + leftCount + " did not fit, kept in inv " + invIndex + ")" : ""));
                 phase = 1;
                 wait = Config.verifyEveryTransfer ? Config.settleTicks : 0;
                 return Outcome.RUNNING;
@@ -821,7 +855,8 @@ public final class Run {
             ItemStack inCarry = p.inventory.getStackInSlot(invIndex);
             int expectLeft = still == null ? 0 : still.count;
             int haveLeft = inCarry == null ? 0 : inCarry.stackSize;
-            if (haveLeft != expectLeft) return fail("inventory slot " + invIndex + " holds " + haveLeft + ", expected " + expectLeft);
+            if (haveLeft != expectLeft)
+                return fail("inventory slot " + invIndex + " holds " + haveLeft + ", expected " + expectLeft);
             wait = Config.clickDelayTicks;
             return Outcome.DONE;
         }
@@ -866,12 +901,20 @@ public final class Run {
 
     private ChestModel readOpen(int id) {
         Container c = containers.get(id);
-        return GuiOps.readChest(mc.thePlayer.openContainer, mc.thePlayer, keys, id, new BlockPos(c.x, c.y, c.z), c.name);
+        return GuiOps
+            .readChest(mc.thePlayer.openContainer, mc.thePlayer, keys, id, new BlockPos(c.x, c.y, c.z), c.name);
     }
 
     private void click(Slot s) {
-        trace.log("  click window " + windowId + " slot " + s.slotNumber + " (" + GuiOps.describe(s.getStack(), keys)
-            + ", cursor " + GuiOps.describe(mc.thePlayer.inventory.getItemStack(), keys) + ")");
+        trace.log(
+            "  click window " + windowId
+                + " slot "
+                + s.slotNumber
+                + " ("
+                + GuiOps.describe(s.getStack(), keys)
+                + ", cursor "
+                + GuiOps.describe(mc.thePlayer.inventory.getItemStack(), keys)
+                + ")");
         mc.playerController.windowClick(windowId, s.slotNumber, 0, 0, mc.thePlayer);
     }
 
@@ -892,7 +935,10 @@ public final class Run {
             if (s.getStack() == null && s.isItemValid(p.inventory.getItemStack())) candidates.add(s);
         }
         for (Slot s : candidates) {
-            trace.warn("Putting cursor item " + GuiOps.describe(p.inventory.getItemStack(), keys) + " into empty slot " + s.slotNumber);
+            trace.warn(
+                "Putting cursor item " + GuiOps.describe(p.inventory.getItemStack(), keys)
+                    + " into empty slot "
+                    + s.slotNumber);
             click(s);
             if (p.inventory.getItemStack() == null) return true;
         }
@@ -904,8 +950,9 @@ public final class Run {
         if (p == null) return;
         if (p.openContainer != p.inventoryContainer) {
             if (p.inventory.getItemStack() != null && !placeCursorSafely()) {
-                trace.error("An item is still on your cursor and there is no empty slot. The chest is left open: "
-                    + "put the item down yourself.");
+                trace.error(
+                    "An item is still on your cursor and there is no empty slot. The chest is left open: "
+                        + "put the item down yourself.");
                 return;
             }
             p.closeScreen();
@@ -920,8 +967,20 @@ public final class Run {
         for (Map.Entry<Integer, Carried> e : carried.entrySet()) {
             Carried c = e.getValue();
             Container src = containers.get(c.sourceChest);
-            trace.warn("  inventory slot " + e.getKey() + ": " + c.count + " x " + keys.label(c.key) + " from " + src.name
-                + " at " + src.x + " " + src.y + " " + src.z);
+            trace.warn(
+                "  inventory slot " + e.getKey()
+                    + ": "
+                    + c.count
+                    + " x "
+                    + keys.label(c.key)
+                    + " from "
+                    + src.name
+                    + " at "
+                    + src.x
+                    + " "
+                    + src.y
+                    + " "
+                    + src.z);
         }
     }
 
@@ -946,10 +1005,12 @@ public final class Run {
             trace.warn("Could not re-read chests " + unverified + "; the check below covers only the others.");
         }
         if (!beforeTotals.equals(afterTotals)) {
-            trace.error("VERIFY FAILED: item totals in the touched chests changed: " + diffLabels(beforeTotals, afterTotals));
+            trace.error(
+                "VERIFY FAILED: item totals in the touched chests changed: " + diffLabels(beforeTotals, afterTotals));
             failure = "verify failed";
         } else if (!perChest.isEmpty()) {
-            trace.warn("Verify: no items lost, but chests " + perChest + " differ from the plan (something changed them?).");
+            trace.warn(
+                "Verify: no items lost, but chests " + perChest + " differ from the plan (something changed them?).");
         } else {
             trace.info("Verify passed: every touched chest holds exactly what the plan said, nothing lost.");
         }
@@ -973,7 +1034,9 @@ public final class Run {
         restoreHand();
         finished = true;
         state = SorterState.IDLE;
-        if (trace.path() != null) trace.info("Trace: " + trace.path().getAbsolutePath());
+        if (trace.path() != null) trace.info(
+            "Trace: " + trace.path()
+                .getAbsolutePath());
         trace.close();
     }
 

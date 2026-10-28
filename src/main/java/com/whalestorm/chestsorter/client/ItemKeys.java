@@ -59,7 +59,9 @@ public final class ItemKeys {
         candidates.add(key);
         List<String> names = oreNamesOf(stack);
         oreNames.put(key, names);
-        infos.put(key, new ItemInfo(key, label(stack), categorizer.categorize(names, modIdOf(stack)), stack.getMaxStackSize()));
+        infos.put(
+            key,
+            new ItemInfo(key, label(stack), categorizer.categorize(names, modIdOf(stack)), stack.getMaxStackSize()));
         return key;
     }
 

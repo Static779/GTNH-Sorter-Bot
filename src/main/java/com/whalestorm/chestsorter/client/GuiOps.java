@@ -50,8 +50,9 @@ public final class GuiOps {
     public static ChestModel readChest(Container c, EntityPlayer p, ItemKeys keys, int id,
         com.whalestorm.chestsorter.core.BlockPos pos, String name) {
         List<Slot> chest = chestSlots(c, p);
-        int limit = chest.isEmpty() ? 64 : chest.get(0)
-            .getSlotStackLimit();
+        int limit = chest.isEmpty() ? 64
+            : chest.get(0)
+                .getSlotStackLimit();
         ChestModel m = new ChestModel(id, pos, name, chest.size(), limit);
         for (int i = 0; i < chest.size(); i++) {
             ItemStack st = chest.get(i)
@@ -61,7 +62,9 @@ public final class GuiOps {
         return m;
     }
 
-    /** Item totals over every slot of the container plus the cursor. A transfer inside the container keeps this equal. */
+    /**
+     * Item totals over every slot of the container plus the cursor. A transfer inside the container keeps this equal.
+     */
     public static Map<Integer, Long> totals(Container c, EntityPlayer p, ItemKeys keys) {
         Map<Integer, Long> t = new TreeMap<>();
         for (Slot s : slots(c)) add(t, keys, s.getStack());

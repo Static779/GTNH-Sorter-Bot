@@ -47,8 +47,17 @@ public final class PlanChecker {
                 if (picked[p.slot]) problems.add(where + ": slot " + p.slot + " picked twice");
                 picked[p.slot] = true;
                 if (src.keys[p.slot] != p.key || src.counts[p.slot] != p.count) {
-                    problems.add(where + ": slot " + p.slot + " holds " + src.counts[p.slot] + " x key " + src.keys[p.slot]
-                        + ", plan picks " + p.count + " x key " + p.key);
+                    problems.add(
+                        where + ": slot "
+                            + p.slot
+                            + " holds "
+                            + src.counts[p.slot]
+                            + " x key "
+                            + src.keys[p.slot]
+                            + ", plan picks "
+                            + p.count
+                            + " x key "
+                            + p.key);
                 }
                 src.set(p.slot, ChestModel.EMPTY, 0);
             }
@@ -73,11 +82,20 @@ public final class PlanChecker {
                         continue;
                     }
                     if (!info.category.equals(plan.chestCategory.get(d.target))) {
-                        problems.add(where + ": " + info.label + " [" + info.category + "] sent to chest " + d.target
-                            + " [" + plan.chestCategory.get(d.target) + "]");
+                        problems.add(
+                            where + ": "
+                                + info.label
+                                + " ["
+                                + info.category
+                                + "] sent to chest "
+                                + d.target
+                                + " ["
+                                + plan.chestCategory.get(d.target)
+                                + "]");
                     }
                     int left = tgt.place(p.key, p.count, info.maxStack);
-                    if (left != 0) problems.add(where + ": " + left + " x " + info.label + " do not fit in chest " + d.target);
+                    if (left != 0)
+                        problems.add(where + ": " + left + " x " + info.label + " do not fit in chest " + d.target);
                 }
             }
             for (int i = 0; i < depositedTimes.length; i++) {
@@ -93,7 +111,8 @@ public final class PlanChecker {
         }
         for (ChestModel c : sim.values()) {
             ChestModel exp = plan.expected.get(c.id);
-            if (exp == null || !java.util.Arrays.equals(exp.keys, c.keys) || !java.util.Arrays.equals(exp.counts, c.counts)) {
+            if (exp == null || !java.util.Arrays.equals(exp.keys, c.keys)
+                || !java.util.Arrays.equals(exp.counts, c.counts)) {
                 problems.add("chest " + c.id + ": replay result differs from the plan's expected state");
             }
         }

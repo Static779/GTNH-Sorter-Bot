@@ -41,7 +41,12 @@ public final class Planner {
             progress = false;
             for (ChestModel original : chests) {
                 if (trips.size() >= maxTrips) break;
-                Plan.Trip trip = planTrip(sim.get(original.id), sim, items, assignment.chestCategory, chestsOf,
+                Plan.Trip trip = planTrip(
+                    sim.get(original.id),
+                    sim,
+                    items,
+                    assignment.chestCategory,
+                    chestsOf,
                     carrySlots);
                 if (trip != null) {
                     trips.add(trip);
@@ -92,8 +97,10 @@ public final class Planner {
             }
             if (target == null) continue;
 
-            ChestModel tm = scratch.computeIfAbsent(target, k -> sim.get(k)
-                .copy());
+            ChestModel tm = scratch.computeIfAbsent(
+                target,
+                k -> sim.get(k)
+                    .copy());
             int left = tm.place(key, count, info.maxStack);
             if (left != 0) throw new IllegalStateException("roomFor/place disagree for key " + key);
             src.set(s, ChestModel.EMPTY, 0);

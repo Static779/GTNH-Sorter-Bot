@@ -12,7 +12,8 @@ import com.whalestorm.chestsorter.Config;
 /** Client-side /chestsorter command. Never sent to the server. */
 public final class SorterCommand extends CommandBase {
 
-    private static final List<String> SUBS = Arrays.asList("run", "plan", "stop", "status", "scan", "item", "verbose", "help");
+    private static final List<String> SUBS = Arrays
+        .asList("run", "plan", "stop", "status", "scan", "item", "verbose", "help");
 
     @Override
     public String getCommandName() {
