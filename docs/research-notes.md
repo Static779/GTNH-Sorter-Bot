@@ -41,3 +41,8 @@ Source: `tools/scan_containers.py` over 208 of 242 RC-2 jars → `docs/data/cont
 - Names kept: Chest Sorter / `chestsorter` / `com.whalestorm.chestsorter` / author Whalestorm.
 - Toggle key ships unbound.
 - License: LGPL-3.0 (`LICENSE`, with GPL-3.0 in `COPYING`). Compatible with reusing InventoryBogoSorter (LGPL-3.0) code with credit.
+
+## CI status
+- [Certain] 2026-10-27: `main` @ a955a2b builds green on GTNH's build-and-test workflow (compile, Spotless/Checkstyle, dedicated-server smoke run). Artifacts: `chestsorter-a955a2b.jar` (the one to install), `-dev`, `-sources`.
+- [Certain] Only Spotless failed on the first run (one wrapped call in Config.java); fixed by applying its diff.
+- [Certain] This session can push branches to the repo but not tags or branch deletions.
