@@ -1,6 +1,8 @@
 # Chest Sorter (GTNH 2.9.0-RC-2, Forge 1.7.10)
 
-Client-side mod. Press one key and it walks to every vanilla chest and Iron Chest near you, reads what is inside, decides which chest holds which kind of item, and moves stacks so each kind ends up together. Then it re-opens every chest it touched and checks nothing was lost.
+Client-side mod. Press one key and it reads every vanilla chest and Iron Chest near you, decides which chest holds which kind of item, combines partial stacks, and walks around moving stacks so each kind ends up together. Every chest it touches is checked before it closes.
+
+**Reading chests:** in singleplayer (or when you host LAN) it reads every chest straight from your world in one tick, without walking or opening anything. On servers it walks to and opens each chest.
 
 ## Use
 1. Put `chestsorter-<version>.jar` (not `-dev` or `-sources`) in your GTNH instance's `mods` folder (`<instance>\.minecraft\mods` in Prism).
@@ -40,6 +42,9 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
 
   `layoutWeight` sets the balance: 0 = only move what is out of place, 1 = balanced (default), higher = tidier layout even if more moves.
 - **Moves**: whole stacks only, and only when the target chest has room for the whole stack. Otherwise the stack stays put.
+- **Combining**: partial stacks of the same item in a chest are poured together the first time the run opens it (20 + 30 → 50). Chests no trip opens are visited at the end to combine theirs (`combineStacks`).
+- **Trip order**: each trip starts at the nearest chest with something to move, usually the one you are standing at; if that chest is still open, it stays open.
+- **Capacity**: before moving, the trace lists slots used and free, buckets against chests, and each bucket's free slots, and warns when a bucket will be nearly full.
 
 ## Why it can't scramble or lose items
 - It only ever sends two kinds of click: pick up a whole stack, and put it down. No shift-click, no dropping, no clicks outside the window.

@@ -22,6 +22,7 @@ import com.whalestorm.chestsorter.Config;
 import com.whalestorm.chestsorter.core.Assigner;
 import com.whalestorm.chestsorter.core.BlockPos;
 import com.whalestorm.chestsorter.core.ChestModel;
+import com.whalestorm.chestsorter.core.Combiner;
 import com.whalestorm.chestsorter.core.Container;
 import com.whalestorm.chestsorter.core.ItemInfo;
 import com.whalestorm.chestsorter.core.Plan;
@@ -47,6 +48,13 @@ import com.whalestorm.chestsorter.core.Taxonomy;
  * not stop the run; counts are always exact.
  * - A chest that cannot be reached or opened is skipped for the rest of the run: stacks meant for it go back to
  * where they came from and the other trips carry on.
+ *
+ * Speed:
+ * - Singleplayer: the survey reads every chest straight from the game's built-in server ({@link LocalChests}); no
+ * walking or opening. Elsewhere it opens each chest.
+ * - Partial stacks of the same item are combined the first time a chest is opened ({@link Combiner}); chests no trip
+ * opens are visited at the end to combine them (when combineStacks is on).
+ * - When the next trip starts at the chest that is already open, it stays open.
  */
 public final class Run {
 
@@ -94,7 +102,7 @@ public final class Run {
     }
 
     /** Ticks after a chest opens before its contents are read (they arrive with the open packet). */
-    private static final int OPEN_SETTLE_TICKS = 2;
+    private static final int OPEN_SETTLE_TICKS = 1;
 
     private final Minecraft mc = Minecraft.getMinecraft();
     private final Mode mode;
@@ -116,6 +124,9 @@ public final class Run {
     private final Set<Integer> skippedChests = new TreeSet<>();
     /** Chests that could not be reached or opened during EXECUTE; trips avoid them from then on. */
     private final Set<Integer> unreachable = new TreeSet<>();
+    /** Chests whose partial stacks were combined this run (or had nothing to combine). */
+    private final Set<Integer> combined = new TreeSet<>();
+    private boolean tidyQueued;
     private int tripsSkipped;
     private final Set<Integer> touched = new TreeSet<>();
     private final List<Integer> carrySlots = new ArrayList<>();
@@ -206,10 +217,22 @@ public final class Run {
             return true;
         }
         state = SorterState.SURVEY;
-        for (final int id : nearestFirstOrder(Walker.feet(p))) {
+        if (Config.localRead && LocalChests.available()) {
+            steps.add(new LocalSurvey());
+        } else {
+            trace.log("Survey: opening each chest (" + (Config.localRead ? "not singleplayer" : "localRead is off") + ")");
+            queueOpenSurvey(nearestFirstOrder(Walker.feet(p)));
+        }
+        return true;
+    }
+
+    /** Survey by walking to and opening each chest; partial stacks are combined while it is open. */
+    private void queueOpenSurvey(List<Integer> ids) {
+        for (final int id : ids) {
             String g = "survey #" + id;
             steps.add(new GoTo(g, true, id));
             steps.add(new Open(g, true, id));
+            steps.add(new CombineStep(g, id, true));
             steps.add(new Step(g, true) {
 
                 String describe() {
@@ -217,16 +240,73 @@ public final class Run {
                 }
 
                 Outcome tick() {
-                    ChestModel m = readOpen(id);
-                    survey.put(id, m);
-                    trace.step("Surveyed #" + id + ": " + countUsed(m) + "/" + m.size() + " slots used");
-                    trace.log("Contents #" + id + ": " + contentsLine(m));
+                    recordSurvey(id, readOpen(id), "opened");
                     return Outcome.DONE;
                 }
             });
             steps.add(new Close(g, true));
         }
-        return true;
+    }
+
+    private void recordSurvey(int id, ChestModel m, String how) {
+        survey.put(id, m);
+        trace.step("Surveyed #" + id + " (" + how + "): " + countUsed(m) + "/" + m.size() + " slots used");
+        trace.log("Contents #" + id + ": " + contentsLine(m));
+    }
+
+    /** Singleplayer survey: one request to the built-in server for every chest, then open only the ones it missed. */
+    private final class LocalSurvey extends Step {
+
+        LocalChests.Request req;
+        int ticks;
+
+        LocalSurvey() {
+            super("survey (singleplayer read)", false);
+        }
+
+        String describe() {
+            return "read all chests from the singleplayer world";
+        }
+
+        Outcome tick() {
+            if (req == null) {
+                req = LocalChests.INSTANCE.request(mc.thePlayer.dimension, containers);
+                return Outcome.RUNNING;
+            }
+            if (!req.done) {
+                if (++ticks > 40) {
+                    trace.warn("Singleplayer read got no answer in 2 s (game paused?); opening chests instead.");
+                    queueOpenSurvey(nearestFirstOrder(Walker.feet(mc.thePlayer)));
+                    return Outcome.DONE;
+                }
+                return Outcome.RUNNING;
+            }
+            if (req.error != null) trace.warn("Singleplayer read failed: " + req.error + "; opening chests instead.");
+            List<Integer> missing = new ArrayList<>();
+            for (int id = 0; id < containers.size(); id++) {
+                net.minecraft.item.ItemStack[] slots = req.error == null ? req.result.get(id) : null;
+                if (slots == null) {
+                    missing.add(id);
+                    continue;
+                }
+                Container c = containers.get(id);
+                ChestModel m = new ChestModel(id, new BlockPos(c.x, c.y, c.z), c.name, slots.length, 64);
+                for (int i = 0; i < slots.length; i++) {
+                    m.set(i, keys.keyOf(slots[i]), slots[i] == null ? 0 : slots[i].stackSize);
+                }
+                recordSurvey(id, m, "read in " + (ticks + 1) + " ticks");
+            }
+            if (!missing.isEmpty()) {
+                trace.info("Singleplayer read covered " + (containers.size() - missing.size()) + " of "
+                    + containers.size() + " chests; opening the other " + missing.size() + ".");
+                List<Integer> order = new ArrayList<>();
+                for (int id : nearestFirstOrder(Walker.feet(mc.thePlayer))) if (missing.contains(id)) order.add(id);
+                queueOpenSurvey(order);
+            } else {
+                trace.info("Read all " + containers.size() + " chests from the singleplayer world without opening them.");
+            }
+            return Outcome.DONE;
+        }
     }
 
     /** Stop now. Never closes a chest while an item is on the cursor. */
@@ -335,7 +415,10 @@ public final class Run {
 
     /** Steps that belong to one chest visit after its GoTo (dropped together when that chest is unreachable). */
     private static boolean isVisitStep(Step s) {
-        return s instanceof Open || s instanceof Deposit || s instanceof VerifyVisit || s instanceof Close;
+        return s instanceof Open || s instanceof CombineStep
+            || s instanceof Deposit
+            || s instanceof VerifyVisit
+            || s instanceof Close;
     }
 
     private void nextPhase() {
@@ -345,6 +428,10 @@ public final class Run {
                 buildPlan();
                 return;
             case EXECUTE:
+                if (!tidyQueued) {
+                    tidyQueued = true;
+                    if (queueTidy()) return;
+                }
                 if (touched.isEmpty()) {
                     finishOk("Done. Nothing needed moving.");
                     return;
@@ -390,7 +477,15 @@ public final class Run {
 
     private void buildPlan() {
         if (!skippedChests.isEmpty()) trace.warn("Could not survey chests " + skippedChests + "; they are left out.");
-        List<ChestModel> chests = new ArrayList<>(survey.values());
+        List<ChestModel> chests = new ArrayList<>();
+        Map<Integer, ItemInfo> infos = keys.infos();
+        int toCombine = 0;
+        for (ChestModel m : survey.values()) {
+            ChestModel c = m.copy();
+            if (Config.combineStacks) toCombine += Combiner.combine(c, infos)
+                .size();
+            chests.add(c);
+        }
         if (chests.isEmpty()) {
             finishOk("No chest could be surveyed.");
             return;
@@ -406,13 +501,20 @@ public final class Run {
             tax,
             Config.minStacksForOwnChest);
         int carry = Math.max(1, carrySlots.size());
-        plan = Planner.plan(chests, items, a, carry, Config.maxTrips);
+        BlockPos here = Walker.feet(mc.thePlayer);
+        plan = Planner.plan(chests, items, a, carry, Config.maxTrips, here);
         List<String> problems = PlanChecker.check(chests, plan, items, carry);
 
         trace.log("Item keys:");
         for (ItemInfo i : items.values())
             trace.log("  key " + i.key + ": " + i + " max " + i.maxStack + " ore " + keys.oreNames(i.key));
-        trace.info("Plan: " + plan.trips.size() + " trips, " + plan.stackMoves() + " stacks to move.");
+        trace.info(
+            "Plan: " + plan.trips.size()
+                + " trips, "
+                + plan.stackMoves()
+                + " stacks to move"
+                + (toCombine > 0 ? ", " + toCombine + " partial stacks to combine." : "."));
+        capacityReport(chests, a);
         trace.log("Layout " + a.costReport + " (layoutWeight " + Config.layoutWeight + ")");
         Map<String, Integer> perCategory = new TreeMap<>();
         for (Map.Entry<Integer, String> e : plan.chestCategory.entrySet()) {
@@ -480,13 +582,105 @@ public final class Run {
             return;
         }
         trace.log("Plan check passed.");
-        if (mode == Mode.PLAN_ONLY || plan.isEmpty()) {
-            finishOk(plan.isEmpty() ? "Already sorted. Nothing to move." : "Plan only: nothing was moved.");
+        if (mode == Mode.PLAN_ONLY) {
+            finishOk("Plan only: nothing was moved.");
+            return;
+        }
+        if (plan.isEmpty() && (toCombine == 0 || allCombined())) {
+            finishOk("Already sorted. Nothing to move.");
             return;
         }
         state = SorterState.EXECUTE;
         t = 0;
         for (Plan.Trip trip : plan.trips) queueTrip(++t, trip);
+    }
+
+    /**
+     * Before anything moves: slots used and free, buckets against chests, and how full each bucket's chests will be
+     * (counting each item as full stacks, which is what combining makes true).
+     */
+    private void capacityReport(List<ChestModel> chests, Assigner.Result a) {
+        int slots = 0, used = 0;
+        for (ChestModel c : chests) {
+            slots += c.size();
+            used += countUsed(c);
+        }
+        int buckets = new TreeSet<>(a.chestCategory.values()).size();
+        trace.info(
+            "Capacity: " + used
+                + " of "
+                + slots
+                + " slots used ("
+                + (slots == 0 ? 0 : 100 * used / slots)
+                + "%), "
+                + buckets
+                + " buckets in "
+                + a.chestCategory.size()
+                + " of "
+                + chests.size()
+                + " chests.");
+        if (a.buckets == null) return;
+        Map<String, Integer> room = new TreeMap<>();
+        for (ChestModel c : chests) {
+            String b = a.chestCategory.get(c.id);
+            if (b != null) room.merge(b, c.size(), Integer::sum);
+        }
+        List<String> tight = new ArrayList<>();
+        for (Map.Entry<String, Integer> e : room.entrySet()) {
+            Integer need = a.buckets.demand.get(e.getKey());
+            int n = need == null ? 0 : need;
+            int free = e.getValue() - n;
+            trace.log("  " + e.getKey() + ": " + n + " stacks in " + e.getValue() + " slots, " + free + " free");
+            if (free < Math.max(1, e.getValue() / 10)) tight.add(e.getKey() + " (" + free + " free)");
+        }
+        if (!tight.isEmpty()) trace.warn("Nearly full after sorting: " + tight + ". More chests would leave room to grow.");
+    }
+
+    private boolean allCombined() {
+        if (!Config.combineStacks) return true;
+        for (Map.Entry<Integer, ChestModel> e : survey.entrySet()) {
+            if (combined.contains(e.getKey())) continue;
+            if (!Combiner.combine(e.getValue().copy(), keys.infos()).isEmpty()) return false;
+        }
+        return true;
+    }
+
+    /** Visits chests no trip opened that still have partial stacks to combine. @return true if any were queued. */
+    private boolean queueTidy() {
+        if (!Config.combineStacks) return false;
+        List<Integer> todo = new ArrayList<>();
+        for (int id : nearestFirstOrder(Walker.feet(mc.thePlayer))) {
+            ChestModel m = survey.get(id);
+            if (m == null || combined.contains(id) || unreachable.contains(id)) continue;
+            if (!Combiner.combine(m.copy(), keys.infos()).isEmpty()) todo.add(id);
+        }
+        if (todo.isEmpty()) return false;
+        trace.info("Combining partial stacks in " + todo.size() + " chests no trip opened.");
+        for (int id : todo) {
+            String g = "tidy #" + id;
+            steps.add(new GoTo(g, true, id));
+            steps.add(new Open(g, true, id));
+            steps.add(new Step(g, true) {
+
+                String describe() {
+                    return "check chest #" + id + " still matches the survey";
+                }
+
+                Outcome tick() {
+                    ChestModel live = readOpen(id);
+                    ChestModel was = survey.get(id);
+                    if (!java.util.Arrays.equals(live.keys, was.keys)
+                        || !java.util.Arrays.equals(live.counts, was.counts)) {
+                        failure = "chest #" + id + " changed since the survey; not combining it";
+                        return Outcome.FAILED;
+                    }
+                    return Outcome.DONE;
+                }
+            });
+            steps.add(new CombineStep(g, id, true));
+            steps.add(new Close(g, true));
+        }
+        return true;
     }
 
     private void queueTrip(int n, final Plan.Trip trip) {
@@ -496,6 +690,7 @@ public final class Run {
         // Before touching anything: reaching and opening the source may fail harmlessly (trip skipped).
         steps.add(new GoTo(g, true, src));
         steps.add(new Open(g, true, src));
+        steps.add(new CombineStep(g, src, true));
         steps.add(new Step(g, true) {
 
             String describe() {
@@ -523,6 +718,7 @@ public final class Run {
         for (Plan.Deposit d : trip.deposits) {
             steps.add(new GoTo(g, false, d.target));
             steps.add(new Open(g, false, d.target));
+            steps.add(new CombineStep(g, d.target, true));
             for (int idx : d.picks) steps.add(new Deposit(g, d.target, idx, pickToSlot, false));
             steps.add(new VerifyVisit(g, d.target));
             steps.add(new Close(g, false));
@@ -591,10 +787,39 @@ public final class Run {
             return "walk to chest #" + id + " at " + pos(id);
         }
 
+        boolean closing;
+        int closeTicks;
+
         Outcome tick() {
             if (!started && unreachable.contains(id) && !group.startsWith("return")) {
                 failure = "chest #" + id + " could not be reached or opened earlier in this run";
                 return Outcome.FAILED;
+            }
+            EntityClientPlayerMP p = mc.thePlayer;
+            if (!started && openChest == id && isOpenScreen(id)) {
+                trace.step("Chest #" + id + " is already open; staying");
+                return Outcome.DONE;
+            }
+            if (!started && (openChest >= 0 || p.openContainer != p.inventoryContainer)) {
+                // A chest left open by the previous step (kept for reuse) must close before walking elsewhere.
+                if (!closing) {
+                    if (p.inventory.getItemStack() != null && !placeCursorSafely()) {
+                        failure = "an item is on the cursor and there is no empty slot to put it in; chest left open";
+                        return Outcome.FAILED;
+                    }
+                    guiMode = Safety.GUI_TRANSITION;
+                    p.closeScreen();
+                    closing = true;
+                }
+                if (p.openContainer == p.inventoryContainer && mc.currentScreen == null) {
+                    openChest = -1;
+                    guiMode = Safety.GUI_NONE;
+                } else if (++closeTicks > 20) {
+                    failure = "chest screen did not close";
+                    return Outcome.FAILED;
+                } else {
+                    return Outcome.RUNNING;
+                }
             }
             if (!started) {
                 walker.start(pos(id));
@@ -628,6 +853,10 @@ public final class Run {
         Outcome tick() {
             EntityClientPlayerMP p = mc.thePlayer;
             ticks++;
+            if (phase == 0 && openChest == id && isOpenScreen(id)) {
+                snapshotOpen(); // kept open from the previous step: new baseline for this visit's checks
+                return Outcome.DONE;
+            }
             switch (phase) {
                 case 0: // aim
                     if (openChest >= 0 || p.openContainer != p.inventoryContainer) {
@@ -702,8 +931,8 @@ public final class Run {
                         failure = "chest #" + id + " contents kept changing";
                         return Outcome.FAILED;
                     }
-                    wait = 1;
-                    return Outcome.RUNNING;
+                    return Outcome.RUNNING; // read again next tick
+
                 }
             }
         }
@@ -724,6 +953,10 @@ public final class Run {
 
         Outcome tick() {
             EntityClientPlayerMP p = mc.thePlayer;
+            if (!sent && openChest >= 0 && nextVisit() == openChest && p.inventory.getItemStack() == null) {
+                trace.step("Keeping chest #" + openChest + " open: the next trip starts here");
+                return Outcome.DONE;
+            }
             if (!sent) {
                 if (p.inventory.getItemStack() != null && !placeCursorSafely()) {
                     failure = "an item is on the cursor and there is no empty slot to put it in; chest left open";
@@ -994,6 +1227,101 @@ public final class Run {
         Map<Integer, Integer> m = new HashMap<>();
         m.put(k, v);
         return m;
+    }
+
+    /**
+     * Combines partial stacks of the same item in the open chest, one pour per tick (three left-clicks: pick up, merge,
+     * put the rest back). Each pour is checked against the client view; {@code verifyAfter} adds a server check
+     * before the chest closes when the visit has none of its own.
+     */
+    private final class CombineStep extends Step {
+
+        final int id;
+        final boolean verifyAfter;
+        List<Combiner.Op> ops;
+        int next;
+
+        CombineStep(String g, int id, boolean verifyAfter) {
+            super(g, false);
+            this.id = id;
+            this.verifyAfter = verifyAfter;
+        }
+
+        String describe() {
+            return "combine partial stacks in chest #" + id;
+        }
+
+        Outcome tick() {
+            // Plan-only runs move nothing, not even inside one chest.
+            if (!Config.combineStacks || mode == Mode.PLAN_ONLY || combined.contains(id)) return Outcome.DONE;
+            if (!requireOpen(id)) return Outcome.FAILED;
+            EntityClientPlayerMP p = mc.thePlayer;
+            if (ops == null) {
+                ops = Combiner.combine(readOpen(id), keys.infos());
+                if (ops.isEmpty()) {
+                    combined.add(id);
+                    return Outcome.DONE;
+                }
+                trace.step("Combining in #" + id + ": " + ops.size() + " pours");
+            }
+            if (next >= ops.size()) {
+                combined.add(id);
+                touched.add(id);
+                if (verifyAfter) steps.addFirst(new VerifyVisit(group, id));
+                return Outcome.DONE;
+            }
+            Combiner.Op op = ops.get(next);
+            List<Slot> chest = GuiOps.chestSlots(p.openContainer, p);
+            Slot from = chest.get(op.from), to = chest.get(op.to);
+            ItemStack fs = from.getStack(), ts = to.getStack();
+            if (p.inventory.getItemStack() != null) return fail("cursor not empty before combining");
+            if (keys.keyOf(fs) != op.key || keys.keyOf(ts) != op.key) {
+                return fail(
+                    "chest #" + id + " slots " + op.from + "/" + op.to + " hold " + GuiOps.describe(fs, keys) + " / "
+                        + GuiOps.describe(ts, keys) + ", expected " + keys.label(op.key));
+            }
+            int fc = fs.stackSize, tc = ts.stackSize;
+            // All three clicks in this tick: the cursor is empty again before the tick ends.
+            click(from);
+            ItemStack cur = p.inventory.getItemStack();
+            if (keys.keyOf(cur) != op.key || cur.stackSize != fc) {
+                if (cur != null) click(from);
+                return fail("pickup for combining gave " + GuiOps.describe(cur, keys));
+            }
+            click(to);
+            if (p.inventory.getItemStack() != null) click(from);
+            if (p.inventory.getItemStack() != null) {
+                return fail("could not put the rest back after combining: "
+                    + GuiOps.describe(p.inventory.getItemStack(), keys) + " on the cursor");
+            }
+            int toNow = to.getStack() == null ? 0 : to.getStack().stackSize;
+            int fromNow = from.getStack() == null ? 0 : from.getStack().stackSize;
+            if (toNow != tc + op.moved || fromNow != fc - op.moved) {
+                return fail("combining gave " + fromNow + "/" + toNow + ", expected " + (fc - op.moved) + "/"
+                    + (tc + op.moved));
+            }
+            trace.step("Combined " + op.moved + " x " + keys.label(op.key) + " #" + id + "[" + op.from + "] -> ["
+                + op.to + "]");
+            next++;
+            return Outcome.RUNNING; // one pour per tick
+        }
+    }
+
+    /** The chest the next GoTo in the queue walks to, skipping bookkeeping steps; -1 if another kind of step comes first. */
+    private int nextVisit() {
+        for (Step s : steps) {
+            if (s instanceof GoTo) return ((GoTo) s).id;
+            if (s instanceof Open || s instanceof Pick || s instanceof Deposit || s instanceof VerifyVisit
+                || s instanceof Close || s instanceof CombineStep) return -1;
+        }
+        return -1;
+    }
+
+    /** The open screen is still the window we opened for chest {@code id}. */
+    private boolean isOpenScreen(int id) {
+        EntityClientPlayerMP p = mc.thePlayer;
+        return openChest == id && p.openContainer != p.inventoryContainer && p.openContainer.windowId == windowId
+            && mc.currentScreen instanceof GuiContainer;
     }
 
     /**

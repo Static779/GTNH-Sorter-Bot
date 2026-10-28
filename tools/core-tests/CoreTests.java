@@ -14,6 +14,7 @@ import com.whalestorm.chestsorter.core.BlockPos;
 import com.whalestorm.chestsorter.core.Categorizer;
 import com.whalestorm.chestsorter.core.ChestModel;
 import com.whalestorm.chestsorter.core.ChestPairing;
+import com.whalestorm.chestsorter.core.Combiner;
 import com.whalestorm.chestsorter.core.ItemInfo;
 import com.whalestorm.chestsorter.core.PathFinder;
 import com.whalestorm.chestsorter.core.Plan;
@@ -54,6 +55,9 @@ public class CoreTests {
         taxonomyBuckets();
         taxonomyAssignEveryItemGetsAChest();
         taxonomyManyCategories();
+        combinerBasics();
+        combinerRandom(5000);
+        plannerNearestTripFirst();
         // planner
         plannerBasicSort();
         plannerLeavesUnassignedAndFull();
@@ -460,6 +464,99 @@ public class CoreTests {
         List<String> problems = PlanChecker.check(cs, p, it, 30);
         check("many: plan clean " + problems, problems.isEmpty());
         check("many: nothing left without room (" + p.stacksLeftNoRoom + ")", p.stacksLeftNoRoom == 0);
+    }
+
+    // ---------------- combiner ----------------
+
+    static void combinerBasics() {
+        Map<Integer, ItemInfo> it = new HashMap<>();
+        it.put(0, new ItemInfo(0, "dust", "dust", 64));
+        it.put(1, new ItemInfo(1, "pearl", "gem", 16));
+        it.put(2, new ItemInfo(2, "sword", "tool", 1));
+        ChestModel c = chest(0, 27, 0, 10, 1, 5, 0, 60, 2, 1, 0, 64, 1, 12, 0, 3, 2, 1);
+        Map<Integer, Long> before = c.totals();
+        List<Combiner.Op> ops = Combiner.combine(c, it);
+        check("combine keeps totals", c.totals().equals(before));
+        // dust 10+60+3 = 73 (+64 full) -> one 64 and one 9; pearls 5+12 = 17 -> 16 + 1; swords untouched
+        int dustSlots = 0, pearlSlots = 0, partialDust = 0;
+        for (int s = 0; s < c.size(); s++) {
+            if (c.keys[s] == 0) {
+                dustSlots++;
+                if (c.counts[s] < 64) partialDust++;
+            }
+            if (c.keys[s] == 1) pearlSlots++;
+        }
+        eq(3, dustSlots); // 64, 64, 9
+        eq(1, partialDust);
+        eq(2, pearlSlots);
+        check("combine made ops " + ops, ops.size() >= 2);
+        check("combined again: no ops", Combiner.combine(c, it).isEmpty());
+    }
+
+    /** Random chests: totals kept, at most one partial stack per item, every op is a legal pour. */
+    static void combinerRandom(int n) {
+        Random rnd = new Random(99);
+        for (int w = 0; w < n; w++) {
+            Map<Integer, ItemInfo> it = new HashMap<>();
+            int kinds = 1 + rnd.nextInt(6);
+            for (int k = 0; k < kinds; k++) {
+                int[] maxes = { 1, 16, 64 };
+                it.put(k, new ItemInfo(k, "i" + k, "c", maxes[rnd.nextInt(3)]));
+            }
+            ChestModel c = new ChestModel(0, new BlockPos(0, 0, 0), "c", 1 + rnd.nextInt(54), 64);
+            for (int s = 0; s < c.size(); s++) {
+                if (rnd.nextBoolean()) {
+                    int k = rnd.nextInt(kinds);
+                    c.set(s, k, 1 + rnd.nextInt(it.get(k).maxStack));
+                }
+            }
+            ChestModel sim = c.copy();
+            Map<Integer, Long> before = c.totals();
+            List<Combiner.Op> ops = Combiner.combine(c, it);
+            for (Combiner.Op op : ops) {
+                int lim = Math.min(64, it.get(op.key).maxStack);
+                boolean ok = sim.keys[op.from] == op.key && sim.keys[op.to] == op.key && op.from != op.to
+                    && op.moved == Math.min(lim - sim.counts[op.to], sim.counts[op.from]) && op.moved > 0;
+                if (!ok) {
+                    failures++;
+                    System.out.println("FAIL combiner world " + w + ": bad op " + op);
+                    break;
+                }
+                sim.counts[op.to] += op.moved;
+                sim.set(op.from, op.key, sim.counts[op.from] - op.moved);
+            }
+            checks++;
+            if (!java.util.Arrays.equals(sim.keys, c.keys) || !java.util.Arrays.equals(sim.counts, c.counts)
+                || !c.totals().equals(before)) {
+                failures++;
+                System.out.println("FAIL combiner world " + w + ": replay differs or totals changed");
+            }
+            Map<Integer, Integer> partial = new HashMap<>();
+            for (int s = 0; s < c.size(); s++) {
+                if (c.keys[s] != ChestModel.EMPTY && c.counts[s] < Math.min(64, it.get(c.keys[s]).maxStack)) {
+                    partial.merge(c.keys[s], 1, Integer::sum);
+                }
+            }
+            for (int v : partial.values()) {
+                checks++;
+                if (v > 1) {
+                    failures++;
+                    System.out.println("FAIL combiner world " + w + ": more than one partial stack left");
+                }
+            }
+        }
+    }
+
+    static void plannerNearestTripFirst() {
+        // Three chests in a row; misplaced items in chests 0 and 2. Start next to chest 2: its trip comes first.
+        Map<Integer, ItemInfo> it = items("a", "b", "c");
+        List<ChestModel> cs = Arrays.asList(chestAt(0, 0, 27, 0, 64, 2, 1), chestAt(1, 10, 27, 1, 64),
+            chestAt(2, 20, 27, 2, 64, 0, 1));
+        Assigner.Result a = Assigner.assign(cs, it);
+        Plan p = Planner.plan(cs, it, a, 27, 100, new BlockPos(20, 64, 0));
+        check("plan has trips", !p.trips.isEmpty());
+        eq(2, p.trips.get(0).source);
+        check("nearest-first plan clean", PlanChecker.check(cs, p, it, 27).isEmpty());
     }
 
     // ---------------- planner ----------------

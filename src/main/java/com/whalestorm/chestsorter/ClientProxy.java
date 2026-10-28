@@ -3,6 +3,7 @@ package com.whalestorm.chestsorter;
 import net.minecraftforge.client.ClientCommandHandler;
 
 import com.whalestorm.chestsorter.client.KeyBindings;
+import com.whalestorm.chestsorter.client.LocalChests;
 import com.whalestorm.chestsorter.client.SorterCommand;
 import com.whalestorm.chestsorter.client.SorterController;
 
@@ -27,6 +28,10 @@ public class ClientProxy extends CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(SorterController.INSTANCE);
+        // Singleplayer survey reads run on the built-in server's tick, which is posted on the same FML bus.
+        FMLCommonHandler.instance()
+            .bus()
+            .register(LocalChests.INSTANCE);
         ClientCommandHandler.instance.registerCommand(new SorterCommand());
     }
 }

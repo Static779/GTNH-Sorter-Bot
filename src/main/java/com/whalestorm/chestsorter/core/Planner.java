@@ -17,6 +17,8 @@ import java.util.TreeMap;
  * - Stacks are moved whole. A trip picks at most {@code carrySlots} stacks, one per empty inventory slot.
  * - Trips are simulated in order, so slots freed by an earlier trip can be used by a later one, exactly as they
  * will be during execution.
+ * - Each next trip starts at the chest with something to move that is nearest to where the last trip ended (often the
+ * chest you are already standing at), instead of in a fixed chest order.
  */
 public final class Planner {
 
@@ -24,6 +26,12 @@ public final class Planner {
 
     public static Plan plan(List<ChestModel> chests, Map<Integer, ItemInfo> items, Assigner.Result assignment,
         int carrySlots, int maxTrips) {
+        return plan(chests, items, assignment, carrySlots, maxTrips, chests.isEmpty() ? null : chests.get(0).pos);
+    }
+
+    /** @param start where the player stands when the trips begin (null: the first chest) */
+    public static Plan plan(List<ChestModel> chests, Map<Integer, ItemInfo> items, Assigner.Result assignment,
+        int carrySlots, int maxTrips, BlockPos start) {
         if (carrySlots < 1) throw new IllegalArgumentException("carrySlots must be >= 1");
 
         Map<Integer, ChestModel> sim = new LinkedHashMap<>();
@@ -36,17 +44,22 @@ public final class Planner {
         }
 
         List<Plan.Trip> trips = new ArrayList<>();
-        boolean progress = true;
-        while (progress && trips.size() < maxTrips) {
-            progress = false;
-            for (ChestModel original : chests) {
-                if (trips.size() >= maxTrips) break;
-                Plan.Trip trip = planTrip(sim.get(original.id), sim, items, assignment, chestsOf, carrySlots);
-                if (trip != null) {
-                    trips.add(trip);
-                    progress = true;
-                }
+        BlockPos at = start != null ? start : (chests.isEmpty() ? new BlockPos(0, 0, 0) : chests.get(0).pos);
+        while (trips.size() < maxTrips) {
+            // Nearest chest first (ties: list order); the first one that can make a trip is used.
+            List<ChestModel> order = new ArrayList<>(chests);
+            final BlockPos from = at;
+            order.sort((a, b) -> Double.compare(dist(from, a.pos), dist(from, b.pos)));
+            Plan.Trip trip = null;
+            for (ChestModel original : order) {
+                trip = planTrip(sim.get(original.id), sim, items, assignment, chestsOf, carrySlots);
+                if (trip != null) break;
             }
+            if (trip == null) break;
+            trips.add(trip);
+            at = sim.get(
+                trip.deposits.isEmpty() ? trip.source
+                    : trip.deposits.get(trip.deposits.size() - 1).target).pos;
         }
 
         int leftNoRoom = 0;

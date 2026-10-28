@@ -29,6 +29,10 @@ public class Config {
     public static double layoutWeight = 1.0;
     /** Smallest group of stacks that gets a chest of its own when there are spare chests. */
     public static int minStacksForOwnChest = 6;
+    /** Singleplayer: read chests from the built-in server instead of opening them. */
+    public static boolean localRead = true;
+    /** Combine partial stacks of the same item in every chest the run handles. */
+    public static boolean combineStacks = true;
     /** Category group lines, see {@link Taxonomy}. */
     public static String[] groups = Taxonomy.DEFAULT_GROUPS.clone();
 
@@ -139,9 +143,30 @@ public class Config {
         g.setLanguageKey(LANG + "groups");
         groups = g.getStringList();
         maxTrips = c.getInt("maxTrips", CAT_SORT, 300, 1, 10000, "Most carry trips per run.", LANG + "maxTrips");
+        localRead = c.getBoolean(
+            "localRead",
+            CAT_SORT,
+            true,
+            "Singleplayer (and LAN host): read every chest straight from your world instead of walking to and "
+                + "opening each one. Exact and instant. Has no effect on servers.",
+            LANG + "localRead");
+        combineStacks = c.getBoolean(
+            "combineStacks",
+            CAT_SORT,
+            true,
+            "Combine partial stacks of the same item (e.g. 20 + 30 iron dust into one 50 stack) in every chest the "
+                + "run opens, and visit untouched chests at the end to combine theirs. Frees slots.",
+            LANG + "combineStacks");
         c.setCategoryPropertyOrder(
             CAT_SORT,
-            Arrays.asList("scanRadius", "minStacksForOwnChest", "layoutWeight", "maxTrips", "groups"));
+            Arrays.asList(
+                "scanRadius",
+                "localRead",
+                "combineStacks",
+                "minStacksForOwnChest",
+                "layoutWeight",
+                "maxTrips",
+                "groups"));
 
         c.setCategoryComment(CAT_MOVE, "Walking to chests.");
         c.setCategoryLanguageKey(CAT_MOVE, LANG + "cat." + CAT_MOVE);

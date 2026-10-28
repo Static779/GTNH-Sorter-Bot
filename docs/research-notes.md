@@ -94,3 +94,19 @@ Other issues in the traces:
 Settings screen:
 - [Certain] FML 1.7.10: `@Mod(guiFactory=…)` → `IModGuiFactory.mainConfigGuiClass()`, built by GuiModList via a `(GuiScreen)` constructor; `GuiConfig(parent, elements, modID, worldRestart, mcRestart, title, title2)`; `new ConfigElement(category)` gives a category button; on Done it posts `ConfigChangedEvent.OnConfigChangedEvent` on the FML bus and the mod re-reads/saves itself. Checked in FML/Forge 1.7.10 sources.
 - Number settings that older files stored as text (`reach`, `layoutWeight`, `minHealthFraction`) are converted to real number entries so the screen validates them; values kept.
+
+## Faster reading and small optimizations (2026-10-28)
+Where run time went (trace 012605, 3511 ticks): walking 1610, opening chests 1168 (9.0 ticks each × 130), checks before closing 410, stack transfers 322 (1 tick each). The survey alone took 838 ticks (42 s) for 48 chests.
+
+Ways to read chests without opening them, checked in source:
+- [Certain] Singleplayer / LAN host: the game's built-in server runs in the same process; `MinecraftServer.getServer().worldServerForDimension(d).getTileEntity(x,y,z)` gives each chest's real inventory (exact slots, counts, NBT). Read on the server thread (ServerTickEvent on the FML bus) and copied. Now the default survey there (`localRead`); any chest it can't read is opened instead.
+- [Certain] HoloInventory 2.5.17-GTNH (client and server in the pack): every tick the server ray-traces where you look (within reach) and sends that block's non-empty stacks with counts, no slot numbers; glasses only gate drawing. Client caches it in `Renderer.tileInventoryMap` (merged per item by default). Usable on GTNH servers by looking, not opening. Not built yet.
+- [Certain] FindIt 1.4.7 (T key): server returns positions only (max 20, 10-tick cooldown) for one item per request. Not usable for a catalogue.
+- [Certain] Iron Chests sync only their top 8 stacks to clients (for crystal chest display); vanilla chests sync nothing until opened.
+- [Guessing] Own server with this mod installed there: a request/response packet could return every chest in range. Not built.
+
+Built:
+- Combining partial stacks (core `Combiner`, deterministic, 5000 random chests tested): pick up, click the same item's partial stack, put the rest back, all in one tick; checked per pour and by the server check before close. Never in plan-only runs.
+- Opening: settle 1 tick and two consecutive equal reads (was 2 + one skipped tick): about 4 ticks saved per open.
+- Trips: each trip starts at the nearest chest with something to move (from where the last trip ended); a chest that the next trip starts at is left open. On the reconstructed 012605 room: 61 trips instead of 75 for the same 852 stack moves, 18 trips start at the already-open chest.
+- Capacity report before any move.

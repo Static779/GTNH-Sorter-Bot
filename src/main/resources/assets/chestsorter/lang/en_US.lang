@@ -25,3 +25,5 @@ chestsorter.cfg.hostileRadius=Stop for hostiles within
 chestsorter.cfg.minHealthFraction=Stop below health fraction
 chestsorter.cfg.traceFile=Write trace file
 chestsorter.cfg.verboseChat=Every step in chat
+chestsorter.cfg.localRead=Singleplayer: read chests directly
+chestsorter.cfg.combineStacks=Combine partial stacks
