@@ -110,3 +110,11 @@ Built:
 - Opening: settle 1 tick and two consecutive equal reads (was 2 + one skipped tick): about 4 ticks saved per open.
 - Trips: each trip starts at the nearest chest with something to move (from where the last trip ended); a chest that the next trip starts at is left open. On the reconstructed 012605 room: 61 trips instead of 75 for the same 852 stack moves, 18 trips start at the already-open chest.
 - Capacity report before any move.
+
+## HoloInventory survey and the sweep (2026-10-28)
+HoloInventory survey (servers): walk into reach, aim at the chest until the game's own look ray has been on it for settleTicks, then read HoloInventory's client cache (`Renderer.tileInventoryMap`, by reflection). [Certain from source] its server resends a block's contents whenever they differ from what that player last got, so a cache entry that did not change is still current. Totals are packed into full stacks; picks are matched to live slots by item and count after combining. No data → that chest is opened; 3 misses and no hit → the rest are opened. Not testable here (needs a server).
+
+Sweep (`tools/sweep.sh`, 5 seeds per row, items from trace 012605, walls of double chests; one setting varied from: 48 chests, 60% fill, 400 item types, 70% mess, 30% partial stacks, 13 carry slots, minStacks 6, layout 1, keepFree 15%):
+- Fixed by this round: layoutWeight 3 left 25.6 stacks with no room (capacity weight 4 → 50: now 0.2); 4.4 of 37 buckets were nearly full (<10% free) at 60% fill (keepFree 15%: 1.0); 96 chests left 7.8 stacks (now 0.6).
+- Still short: rooms ≥ ~85% full strand stacks (85%: 8.8, 95%: 101.6) because whole-chest buckets waste the tail of each bucket's last chest and full chests can't swap; small item-heavy rooms (16 chests, 82% full after one stack per type) strand ~33 and put 17% of stacks in misc. Few carry slots multiply walking (3 slots: 6964 blocks / 417 trips; 27 slots: 2677 / 82). Buckets spanning chests > 6 blocks apart: ~3 of 33. Plenty of chests and many tiny groups → many near-empty chests (96 chests at 30%: 18.8). Planning 96 chests takes ~2.5 s (now on a background thread, so no freeze).
+- 205 plans, 0 PlanChecker problems.

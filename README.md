@@ -2,7 +2,7 @@
 
 Client-side mod. Press one key and it reads every vanilla chest and Iron Chest near you, decides which chest holds which kind of item, combines partial stacks, and walks around moving stacks so each kind ends up together. Every chest it touches is checked before it closes.
 
-**Reading chests:** in singleplayer (or when you host LAN) it reads every chest straight from your world in one tick, without walking or opening anything. On servers it walks to and opens each chest.
+**Reading chests:** in singleplayer (or when you host LAN) it reads every chest straight from your world in one tick, without walking or opening anything. On servers with HoloInventory (GTNH has it) it walks within reach and looks at each chest; HoloInventory's server sends the contents, no glasses needed. Anything it can't read that way, it opens.
 
 ## Use
 1. Put `chestsorter-<version>.jar` (not `-dev` or `-sources`) in your GTNH instance's `mods` folder (`<instance>\.minecraft\mods` in Prism).
@@ -89,7 +89,7 @@ Group lines look like `metals: ingot*, nugget*, block` (a trailing `*` matches a
 gradlew.bat spotlessApply
 gradlew.bat build
 ```
-**Without Minecraft:** `tools/test-core.sh` runs the logic tests (categorizing, grouping, assigning, planning on 6000 random chest setups, pathfinding). `tools/check-stubs.sh` is a quick typo check. `tools/replay-trace.sh <trace.log> [minStacks] [layoutWeight] [groups-file]` re-plans a real run from its trace with the current code, so grouping changes can be checked against your actual chests.
+**Without Minecraft:** `tools/test-core.sh` runs the logic tests (categorizing, grouping, assigning, planning on 6000 random chest setups, pathfinding). `tools/check-stubs.sh` is a quick typo check. `tools/replay-trace.sh <trace.log> [minStacks] [layoutWeight] [groups-file]` re-plans a real run from its trace with the current code, so grouping changes can be checked against your actual chests. `tools/sweep.sh` runs the planner on generated rooms (items from a real trace), varying one setting at a time, and prints the shortfalls per setting (results: `docs/data/sweep-2026-10-28.csv`).
 
 ## Layout
 | Path | What |

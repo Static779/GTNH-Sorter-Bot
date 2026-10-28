@@ -126,6 +126,8 @@ public final class Run {
     private final Set<Integer> unreachable = new TreeSet<>();
     /** Chests whose partial stacks were combined this run (or had nothing to combine). */
     private final Set<Integer> combined = new TreeSet<>();
+    /** Each chest's contents the first time this run opened it: the start point for the final no-loss check. */
+    private final Map<Integer, ChestModel> baseline = new HashMap<>();
     private boolean tidyQueued;
     private int tripsSkipped;
     private final Set<Integer> touched = new TreeSet<>();
@@ -219,9 +221,17 @@ public final class Run {
         state = SorterState.SURVEY;
         if (Config.localRead && LocalChests.available()) {
             steps.add(new LocalSurvey());
+        } else if (Config.holoRead && HoloRead.available()) {
+            trace.log("Survey: looking at each chest (HoloInventory)");
+            for (int id : nearestFirstOrder(Walker.feet(p))) {
+                String g = "survey #" + id;
+                steps.add(new GoTo(g, true, id));
+                steps.add(new HoloLook(g, id));
+            }
         } else {
             trace.log(
-                "Survey: opening each chest (" + (Config.localRead ? "not singleplayer" : "localRead is off") + ")");
+                "Survey: opening each chest (not singleplayer"
+                    + (Config.holoRead ? ", HoloInventory not loaded)" : ", holoRead is off)"));
             queueOpenSurvey(nearestFirstOrder(Walker.feet(p)));
         }
         return true;
@@ -232,21 +242,137 @@ public final class Run {
         for (final int id : ids) {
             String g = "survey #" + id;
             steps.add(new GoTo(g, true, id));
-            steps.add(new Open(g, true, id));
-            steps.add(new CombineStep(g, id, true));
-            steps.add(new Step(g, true) {
+            steps.addAll(openSurveySteps(g, id));
+        }
+    }
 
-                String describe() {
-                    return "read chest #" + id;
-                }
+    /** Open, combine, read, close: the survey of one chest that is already in reach. */
+    private List<Step> openSurveySteps(String g, final int id) {
+        List<Step> out = new ArrayList<>();
+        out.add(new Open(g, true, id));
+        out.add(new CombineStep(g, id, true));
+        out.add(new Step(g, true) {
 
-                Outcome tick() {
-                    recordSurvey(id, readOpen(id), "opened");
+            String describe() {
+                return "read chest #" + id;
+            }
+
+            Outcome tick() {
+                recordSurvey(id, readOpen(id), "opened");
+                return Outcome.DONE;
+            }
+        });
+        out.add(new Close(g, true));
+        return out;
+    }
+
+    private int holoHits, holoMisses;
+    private boolean holoOff;
+
+    /**
+     * Survey of one chest in reach by looking at it: HoloInventory's server sends the contents of the block a player
+     * looks at (and resends whenever they change), and its client keeps them in a cache this reads. The read waits
+     * until the game's own look ray has been on the chest for settleTicks, so the server has seen the look too. The
+     * totals are packed into full stacks, which is what the chest holds once combined. No data: the chest is opened
+     * instead; three misses in a row with no hit means the server does not send any, and the rest are opened.
+     */
+    private final class HoloLook extends Step {
+
+        final int id;
+        int ticks, onTarget;
+        Object before;
+        boolean started;
+
+        HoloLook(String g, int id) {
+            super(g, true);
+            this.id = id;
+        }
+
+        String describe() {
+            return "look at chest #" + id;
+        }
+
+        Outcome tick() {
+            Container c = containers.get(id);
+            int dim = mc.thePlayer.dimension;
+            if (holoOff) return miss(null);
+            if (!started) {
+                started = true;
+                before = holoEntry(dim, c);
+            }
+            ticks++;
+            Walker.aimAt(mc.thePlayer, pos(id));
+            onTarget = lookingAt(c) ? onTarget + 1 : 0;
+            if (onTarget >= Config.settleTicks) {
+                Object e = holoEntry(dim, c);
+                if (e != null) {
+                    ChestModel m = packed(id, HoloRead.stacks(e));
+                    if (m == null) return miss("its HoloInventory data does not fit the chest");
+                    holoHits++;
+                    recordSurvey(id, m, e != before ? "looked, new data" : "looked, unchanged since last look");
                     return Outcome.DONE;
                 }
-            });
-            steps.add(new Close(g, true));
+                if (onTarget >= Config.settleTicks + 10) return miss("no HoloInventory data arrived");
+            }
+            if (ticks > 40) return miss(onTarget == 0 ? "could not get it in view" : "no HoloInventory data arrived");
+            return Outcome.RUNNING;
         }
+
+        private Outcome miss(String why) {
+            if (why != null) {
+                holoMisses++;
+                trace.step("Chest #" + id + ": " + why + "; opening it");
+                if (holoHits == 0 && holoMisses >= 3) {
+                    holoOff = true;
+                    trace.warn(
+                        "HoloInventory sent nothing for 3 chests (not on this server, or chests banned there); "
+                            + "opening chests instead.");
+                }
+            }
+            List<Step> open = openSurveySteps(group, id);
+            for (int i = open.size() - 1; i >= 0; i--) steps.addFirst(open.get(i));
+            return Outcome.DONE;
+        }
+    }
+
+    private Object holoEntry(int dim, Container c) {
+        Object e = HoloRead.entry(dim, c.x, c.y, c.z);
+        if (e == null && c.partner != null) e = HoloRead.entry(dim, c.partner.x, c.partner.y, c.partner.z);
+        return e;
+    }
+
+    private boolean lookingAt(Container c) {
+        net.minecraft.util.MovingObjectPosition mo = mc.objectMouseOver;
+        if (mo == null || mo.typeOfHit != net.minecraft.util.MovingObjectPosition.MovingObjectType.BLOCK) return false;
+        if (mo.blockX == c.x && mo.blockY == c.y && mo.blockZ == c.z) return true;
+        return c.partner != null && mo.blockX == c.partner.x && mo.blockY == c.partner.y && mo.blockZ == c.partner.z;
+    }
+
+    /** Item totals packed into full stacks (the combined chest); null if they do not fit the chest's slots. */
+    private ChestModel packed(int id, net.minecraft.item.ItemStack[] stacks) {
+        Container c = containers.get(id);
+        Map<Integer, Long> totals = new TreeMap<>();
+        if (stacks != null) {
+            for (net.minecraft.item.ItemStack st : stacks) {
+                if (st == null || st.stackSize <= 0) continue;
+                net.minecraft.item.ItemStack one = st.copy();
+                one.stackSize = 1;
+                totals.merge(keys.keyOf(one), (long) st.stackSize, Long::sum);
+            }
+        }
+        ChestModel m = new ChestModel(id, new BlockPos(c.x, c.y, c.z), c.name, c.slots, 64);
+        int slot = 0;
+        for (Map.Entry<Integer, Long> e : totals.entrySet()) {
+            int limit = Combiner.limit(m, keys.infos(), e.getKey());
+            long left = e.getValue();
+            while (left > 0) {
+                if (slot >= m.size()) return null;
+                int n = (int) Math.min(limit, left);
+                m.set(slot++, e.getKey(), n);
+                left -= n;
+            }
+        }
+        return m;
     }
 
     private void recordSurvey(int id, ChestModel m, String how) {
@@ -482,14 +608,28 @@ public final class Run {
     // planning
     // =====================================================================================================
 
+    /** Result of planning on the background thread. */
+    private static final class Planned {
+
+        Assigner.Result a;
+        Plan plan;
+        List<String> problems;
+        Throwable error;
+        long ms;
+    }
+
+    /**
+     * Starts planning on a background thread so the game never freezes (big rooms take a second or more). Everything
+     * the thread uses is a private copy; nothing in Minecraft is touched from it.
+     */
     private void buildPlan() {
         if (!skippedChests.isEmpty()) trace.warn("Could not survey chests " + skippedChests + "; they are left out.");
-        List<ChestModel> chests = new ArrayList<>();
-        Map<Integer, ItemInfo> infos = keys.infos();
+        final List<ChestModel> chests = new ArrayList<>();
+        final Map<Integer, ItemInfo> items = new HashMap<>(keys.infos());
         int toCombine = 0;
         for (ChestModel m : survey.values()) {
             ChestModel c = m.copy();
-            if (Config.combineStacks) toCombine += Combiner.combine(c, infos)
+            if (Config.combineStacks) toCombine += Combiner.combine(c, items)
                 .size();
             chests.add(c);
         }
@@ -497,20 +637,59 @@ public final class Run {
             finishOk("No chest could be surveyed.");
             return;
         }
-        Map<Integer, ItemInfo> items = keys.infos();
-        Taxonomy tax = Taxonomy.parse(Config.groups);
+        final Taxonomy tax = Taxonomy.parse(Config.groups);
         for (String pr : tax.problems) trace.warn("Category groups setting: " + pr);
-        Assigner.Result a = Assigner.assign(
-            chests,
-            items,
-            new java.util.HashMap<Integer, String>(),
-            new Assigner.Weights(1.0, Config.layoutWeight),
-            tax,
-            Config.minStacksForOwnChest);
-        int carry = Math.max(1, carrySlots.size());
-        BlockPos here = Walker.feet(mc.thePlayer);
-        plan = Planner.plan(chests, items, a, carry, Config.maxTrips, here);
-        List<String> problems = PlanChecker.check(chests, plan, items, carry);
+        final int carry = Math.max(1, carrySlots.size());
+        final BlockPos here = Walker.feet(mc.thePlayer);
+        final double layout = Config.layoutWeight, keepFree = Config.keepFreePercent / 100.0;
+        final int minSplit = Config.minStacksForOwnChest, maxTrips = Config.maxTrips;
+        final Planned out = new Planned();
+        final int combines = toCombine;
+        Thread t = new Thread(() -> {
+            long t0 = System.nanoTime();
+            try {
+                out.a = Assigner.assign(
+                    chests,
+                    items,
+                    new HashMap<Integer, String>(),
+                    new Assigner.Weights(1.0, layout),
+                    tax,
+                    minSplit,
+                    keepFree);
+                out.plan = Planner.plan(chests, items, out.a, carry, maxTrips, here);
+                out.problems = PlanChecker.check(chests, out.plan, items, carry);
+            } catch (Throwable e) {
+                out.error = e;
+            }
+            out.ms = (System.nanoTime() - t0) / 1000000;
+        }, "ChestSorter planner");
+        t.setDaemon(true);
+        t.start();
+        trace.step("Planning " + chests.size() + " chests in the background");
+        steps.add(new Step("plan", false) {
+
+            String describe() {
+                return "plan (background)";
+            }
+
+            Outcome tick() {
+                if (t.isAlive()) return Outcome.RUNNING;
+                if (out.error != null) {
+                    trace.log("Planner error: " + out.error);
+                    for (StackTraceElement e : out.error.getStackTrace()) trace.log("    at " + e);
+                    failure = "planning failed: " + out.error;
+                    return Outcome.FAILED;
+                }
+                trace.log("Planned in " + out.ms + " ms");
+                plan = out.plan;
+                finishPlan(chests, items, combines, out.a, out.problems);
+                return Outcome.DONE;
+            }
+        });
+    }
+
+    private void finishPlan(List<ChestModel> chests, Map<Integer, ItemInfo> items, int toCombine, Assigner.Result a,
+        List<String> problems) {
 
         trace.log("Item keys:");
         for (ItemInfo i : items.values())
@@ -700,6 +879,9 @@ public final class Run {
         final String g = "trip " + n;
         final int src = trip.source;
         final Map<Integer, Integer> pickToSlot = new HashMap<>();
+        // Planned pick → live chest slot. Matched by item and count, so a chest read by looking (which gives totals,
+        // not slots) works too: after combining, a chest holds the same stacks the plan packed.
+        final Map<Integer, Integer> liveSlot = new HashMap<>();
         // Before touching anything: reaching and opening the source may fail harmlessly (trip skipped).
         steps.add(new GoTo(g, true, src));
         steps.add(new Open(g, true, src));
@@ -712,9 +894,31 @@ public final class Run {
 
             Outcome tick() {
                 ChestModel live = readOpen(src);
-                for (Plan.Pick p : trip.picks) {
-                    if (live.keys[p.slot] != p.key || live.counts[p.slot] != p.count) {
-                        failure = "chest #" + src + " changed since the survey (slot " + p.slot + ")";
+                liveSlot.clear();
+                Set<Integer> used = new TreeSet<>();
+                for (int i = 0; i < trip.picks.size(); i++) { // the planned slot when it still matches
+                    Plan.Pick p = trip.picks.get(i);
+                    if (p.slot < live.size() && live.keys[p.slot] == p.key
+                        && live.counts[p.slot] == p.count
+                        && used.add(p.slot)) liveSlot.put(i, p.slot);
+                }
+                for (int i = 0; i < trip.picks.size(); i++) { // else any unused slot with the same stack
+                    if (liveSlot.containsKey(i)) continue;
+                    Plan.Pick p = trip.picks.get(i);
+                    for (int sl = 0; sl < live.size(); sl++) {
+                        if (live.keys[sl] == p.key && live.counts[sl] == p.count && !used.contains(sl)) {
+                            used.add(sl);
+                            liveSlot.put(i, sl);
+                            break;
+                        }
+                    }
+                    if (!liveSlot.containsKey(i)) {
+                        failure = "chest #" + src
+                            + " changed since the survey (no stack of "
+                            + p.count
+                            + " x "
+                            + keys.label(p.key)
+                            + ")";
                         return Outcome.FAILED;
                     }
                 }
@@ -724,7 +928,7 @@ public final class Run {
         final Map<Integer, Integer> pickTarget = new HashMap<>();
         for (Plan.Deposit d : trip.deposits) for (int idx : d.picks) pickTarget.put(idx, d.target);
         for (int i = 0; i < trip.picks.size(); i++) {
-            steps.add(new Pick(g, src, i, trip.picks.get(i), pickToSlot, pickTarget.get(i)));
+            steps.add(new Pick(g, src, i, trip.picks.get(i), pickToSlot, pickTarget.get(i), liveSlot));
         }
         steps.add(new VerifyVisit(g, src));
         steps.add(new Close(g, false));
@@ -997,23 +1201,30 @@ public final class Run {
 
         final int src, index, target;
         final Plan.Pick pick;
-        final Map<Integer, Integer> pickToSlot;
+        final Map<Integer, Integer> pickToSlot, liveSlot;
         int phase;
         Map<Integer, Long> before;
         Slot chestSlot, carrySlot;
         int carryIndex;
 
-        Pick(String g, int src, int index, Plan.Pick pick, Map<Integer, Integer> pickToSlot, Integer target) {
+        Pick(String g, int src, int index, Plan.Pick pick, Map<Integer, Integer> pickToSlot, Integer target,
+            Map<Integer, Integer> liveSlot) {
             super(g, false);
             this.src = src;
             this.index = index;
             this.pick = pick;
             this.pickToSlot = pickToSlot;
             this.target = target == null ? -1 : target;
+            this.liveSlot = liveSlot;
+        }
+
+        int slot() {
+            Integer s = liveSlot.get(index);
+            return s != null ? s : pick.slot;
         }
 
         String describe() {
-            return "take " + pick.count + " x " + keys.label(pick.key) + " from #" + src + " slot " + pick.slot;
+            return "take " + pick.count + " x " + keys.label(pick.key) + " from #" + src + " slot " + slot();
         }
 
         Outcome tick() {
@@ -1034,11 +1245,11 @@ public final class Run {
                 if (!requireOpen(src)) return Outcome.FAILED;
                 if (p.inventory.getItemStack() != null) return fail("cursor not empty before pickup");
                 chestSlot = GuiOps.chestSlots(p.openContainer, p)
-                    .get(pick.slot);
+                    .get(slot());
                 ItemStack st = chestSlot.getStack();
                 if (keys.keyOf(st) != pick.key || st.stackSize != pick.count) {
                     return fail(
-                        "slot " + pick.slot
+                        "slot " + slot()
                             + " holds "
                             + GuiOps.describe(st, keys)
                             + ", expected "
@@ -1080,7 +1291,7 @@ public final class Run {
                         + " #"
                         + src
                         + "["
-                        + pick.slot
+                        + slot()
                         + "] -> inv "
                         + carryIndex);
                 phase = 1;
@@ -1438,6 +1649,7 @@ public final class Run {
     /** Records what the just-opened container and the inventory hold, for {@link VerifyVisit}. */
     private void snapshotOpen() {
         EntityClientPlayerMP p = mc.thePlayer;
+        if (openChest >= 0 && !baseline.containsKey(openChest)) baseline.put(openChest, readOpen(openChest));
         openTotals = GuiOps.totals(p.openContainer, p, keys);
         openInvKeys = new int[36];
         openInvCounts = new int[36];
@@ -1577,7 +1789,8 @@ public final class Run {
         Map<Integer, Long> beforeTotals = new TreeMap<>(), afterTotals = new TreeMap<>();
         List<String> perChest = new ArrayList<>();
         for (int id : touched) {
-            ChestModel b = survey.get(id), a = after.get(id);
+            // What the chest held when this run first opened it (the survey may be older, or read by looking).
+            ChestModel b = baseline.containsKey(id) ? baseline.get(id) : survey.get(id), a = after.get(id);
             if (b == null || a == null) continue;
             for (Map.Entry<Integer, Long> e : b.totals()
                 .entrySet()) beforeTotals.merge(e.getKey(), e.getValue(), Long::sum);

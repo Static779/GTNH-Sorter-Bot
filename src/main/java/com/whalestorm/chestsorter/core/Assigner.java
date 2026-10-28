@@ -40,8 +40,11 @@ public final class Assigner {
         public static final Weights DEFAULT = new Weights(1.0, 1.0);
     }
 
-    /** Per missing slot of room: much higher than any layout term, so room comes first. */
-    static final double CAPACITY_WEIGHT = 4.0;
+    /**
+     * Per missing slot of room. Room must win over layout at any layoutWeight: the sweep (tools/sweep.sh) showed a
+     * weight of 4 let layoutWeight 3 leave ~26 stacks with nowhere to go, to keep chests tidy.
+     */
+    static final double CAPACITY_WEIGHT = 50.0;
     /** Relative strength of the "related nearby" term against the "together" term. */
     static final double RELATED_WEIGHT = 0.5;
     private static final int MAX_PASSES = 30;
@@ -110,10 +113,19 @@ public final class Assigner {
      */
     public static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
         Weights w, Taxonomy tax, int minSplitStacks) {
+        return assign(chests, items, locked, w, tax, minSplitStacks, 0);
+    }
+
+    /**
+     * @param keepFree fraction of each chest to leave free when deciding how many buckets the chests can hold (room to
+     *                 grow): 0.15 sizes buckets as if chests were 15% smaller
+     */
+    public static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
+        Weights w, Taxonomy tax, int minSplitStacks, double keepFree) {
         Map<String, Integer> fine = demand(chests, items, new HashMap<String, String>());
         int slots = 0;
         for (ChestModel m : chests) slots += m.size();
-        double avg = chests.isEmpty() ? 27 : (double) slots / chests.size();
+        double avg = (chests.isEmpty() ? 27 : (double) slots / chests.size()) * (1 - Math.max(0, Math.min(0.9, keepFree)));
         Taxonomy.Buckets bk = tax.bucket(fine, chests.size() - locked.size(), avg, minSplitStacks);
         Map<String, String> pre = new TreeMap<>();
         for (Map.Entry<String, String> e : bk.bucketOf.entrySet()) {

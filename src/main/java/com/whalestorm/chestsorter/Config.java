@@ -31,8 +31,12 @@ public class Config {
     public static int minStacksForOwnChest = 6;
     /** Singleplayer: read chests from the built-in server instead of opening them. */
     public static boolean localRead = true;
+    /** Servers: read chests by looking at them (HoloInventory) instead of opening them. */
+    public static boolean holoRead = true;
     /** Combine partial stacks of the same item in every chest the run handles. */
     public static boolean combineStacks = true;
+    /** Percent of each chest to keep free for new items when deciding how narrow chests get. */
+    public static int keepFreePercent = 15;
     /** Category group lines, see {@link Taxonomy}. */
     public static String[] groups = Taxonomy.DEFAULT_GROUPS.clone();
 
@@ -124,6 +128,15 @@ public class Config {
             "With spare chests, a category (or group) gets a chest of its own once it has at least this many stacks. "
                 + "Lower = more, narrower chests. Higher = broader chests (whole groups like 'dusts', 'metals').",
             LANG + "minStacksForOwnChest");
+        keepFreePercent = c.getInt(
+            "keepFreePercent",
+            CAT_SORT,
+            15,
+            0,
+            60,
+            "Room to grow: when deciding how many chests each group gets, count every chest as this much smaller. "
+                + "Higher = fewer, roomier chests per group; 0 = pack chests as full as possible.",
+            LANG + "keepFreePercent");
         layoutWeight = dbl(
             CAT_SORT,
             "layoutWeight",
@@ -150,6 +163,13 @@ public class Config {
             "Singleplayer (and LAN host): read every chest straight from your world instead of walking to and "
                 + "opening each one. Exact and instant. Has no effect on servers.",
             LANG + "localRead");
+        holoRead = c.getBoolean(
+            "holoRead",
+            CAT_SORT,
+            true,
+            "Servers: read each chest by looking at it, using HoloInventory's data (no glasses needed), instead of "
+                + "opening it. Needs HoloInventory on the server; if it sends nothing, chests are opened instead.",
+            LANG + "holoRead");
         combineStacks = c.getBoolean(
             "combineStacks",
             CAT_SORT,
@@ -162,8 +182,10 @@ public class Config {
             Arrays.asList(
                 "scanRadius",
                 "localRead",
+                "holoRead",
                 "combineStacks",
                 "minStacksForOwnChest",
+                "keepFreePercent",
                 "layoutWeight",
                 "maxTrips",
                 "groups"));
