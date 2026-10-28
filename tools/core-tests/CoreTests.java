@@ -555,7 +555,7 @@ public class CoreTests {
         Assigner.Result a = Assigner.assign(cs, it);
         Plan p = Planner.plan(cs, it, a, 27, 100, new BlockPos(20, 64, 0));
         check("plan has trips", !p.trips.isEmpty());
-        eq(2, p.trips.get(0).source);
+        eq(2, p.trips.get(0).source());
         check("nearest-first plan clean", PlanChecker.check(cs, p, it, 27).isEmpty());
     }
 
@@ -611,7 +611,7 @@ public class CoreTests {
         ChestModel b = chest(1, 27, 1, 64, 1, 64, 1, 64, 1, 64, 1, 64, 1, 64);
         Plan p = planAndCheck("carry", Arrays.asList(a, b), it, 2);
         check("carry: 5 dust stacks moved", p.stackMoves() == 5);
-        for (Plan.Trip t : p.trips) check("carry: trip <= 2", t.picks.size() <= 2);
+        for (Plan.Trip t : p.trips) check("carry: at most 2 carried", t.maxCarried() <= 2);
         check("carry: 3 trips", p.trips.size() == 3);
     }
 
@@ -621,8 +621,13 @@ public class CoreTests {
         ChestModel a = chest(0, 3, 0, 64, 0, 64, 1, 64);
         ChestModel b = chest(1, 3, 1, 64, 1, 64, 0, 64);
         Plan p = planAndCheck("swap", Arrays.asList(a, b), it, 27);
-        // Neither can move first (no room anywhere): stays put. Documented limitation, safe.
-        check("swap: nothing moved, nothing lost", p.stackMoves() == 0 && p.stacksLeftNoRoom == 2);
+        // No room anywhere: the route takes A's dust, takes B's ingot, puts the dust in B, then the ingot in A.
+        check("swap: both moved " + p.stackMoves() + "/" + p.stacksLeftNoRoom, p.stackMoves() == 2 && p.stacksLeftNoRoom == 0);
+        check("swap: one trip", p.trips.size() == 1);
+        // Carry limit 1 makes the swap impossible: stays put, nothing lost.
+        Plan p1 = Planner.plan(Arrays.asList(a, b), it, Assigner.assign(Arrays.asList(a, b), it), 1, 100);
+        check("swap with 1 slot: nothing moved", p1.stackMoves() == 0 && p1.stacksLeftNoRoom == 2);
+        check("swap with 1 slot: plan clean", PlanChecker.check(Arrays.asList(a, b), p1, it, 1).isEmpty());
         // With one spare slot in A, B's ingot goes to A, freeing a slot in B for A's dust.
         ChestModel a2 = chest(0, 4, 0, 64, 0, 64, 1, 64);
         ChestModel b2 = chest(1, 3, 1, 64, 1, 64, 0, 64);
@@ -700,18 +705,24 @@ public class CoreTests {
         // Wrong count picked.
         Plan.Trip t = good.trips.get(0);
         Plan.Pick p = t.picks.get(0);
-        Plan bad = new Plan(Arrays.asList(new Plan.Trip(t.source, Arrays.asList(new Plan.Pick(p.slot, p.key, p.count + 1)),
-            t.deposits)), good.chestCategory, good.unassigned, good.merged, 0, good.expected);
+        Plan bad = new Plan(Arrays.asList(new Plan.Trip(Arrays.asList(new Plan.Pick(p.chest, p.slot, p.key, p.count + 1)),
+            t.visits)), good.chestCategory, good.unassigned, good.merged, 0, good.expected);
         check("checker: wrong count caught", !PlanChecker.check(cs, bad, it, 27).isEmpty());
-        // Deposit to wrong category.
-        Plan bad2 = new Plan(Arrays.asList(new Plan.Trip(t.source, t.picks,
-            Arrays.asList(new Plan.Deposit(t.source, Arrays.asList(0))))), good.chestCategory, good.unassigned,
-            good.merged, 0, good.expected);
+        // Put back into the chest it came from (wrong category too).
+        Plan bad2 = new Plan(Arrays.asList(new Plan.Trip(Arrays.asList(p), Arrays.asList(
+            new Plan.Visit(p.chest, Arrays.asList(new Plan.Op(false, 0), new Plan.Op(true, 0)))))), good.chestCategory,
+            good.unassigned, good.merged, 0, good.expected);
         check("checker: wrong target caught", !PlanChecker.check(cs, bad2, it, 27).isEmpty());
-        // Pick never deposited (item would stay in inventory).
-        Plan bad3 = new Plan(Arrays.asList(new Plan.Trip(t.source, t.picks, new ArrayList<Plan.Deposit>())),
-            good.chestCategory, good.unassigned, good.merged, 0, good.expected);
+        // Pick never put in (item would stay in inventory).
+        Plan bad3 = new Plan(Arrays.asList(new Plan.Trip(Arrays.asList(p), Arrays.asList(
+            new Plan.Visit(p.chest, Arrays.asList(new Plan.Op(false, 0)))))), good.chestCategory, good.unassigned,
+            good.merged, 0, good.expected);
         check("checker: undeposited pick caught", !PlanChecker.check(cs, bad3, it, 27).isEmpty());
+        // Put in before it was taken.
+        Plan bad4 = new Plan(Arrays.asList(new Plan.Trip(Arrays.asList(p), Arrays.asList(
+            new Plan.Visit(1, Arrays.asList(new Plan.Op(true, 0))), new Plan.Visit(p.chest, Arrays.asList(new Plan.Op(false, 0)))))),
+            good.chestCategory, good.unassigned, good.merged, 0, good.expected);
+        check("checker: put-before-take caught", !PlanChecker.check(cs, bad4, it, 27).isEmpty());
         // Too many stacks for carry.
         check("checker: carry limit caught", !PlanChecker.check(cs, good, it, 0).isEmpty());
     }

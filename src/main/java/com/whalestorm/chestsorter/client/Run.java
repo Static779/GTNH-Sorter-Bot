@@ -549,6 +549,8 @@ public final class Run {
     /** Steps that belong to one chest visit after its GoTo (dropped together when that chest is unreachable). */
     private static boolean isVisitStep(Step s) {
         return s instanceof Open || s instanceof CombineStep
+            || s instanceof MatchPicks
+            || s instanceof Pick
             || s instanceof Deposit
             || s instanceof VerifyVisit
             || s instanceof Close;
@@ -751,15 +753,33 @@ public final class Run {
         if (plan.stacksLeftNoRoom > 0) {
             trace.warn(plan.stacksLeftNoRoom + " stacks stay where they are: their category's chests are full.");
         }
+        trace.info("Route: " + plan.trips.size() + " trips, " + plan.visits() + " chest visits.");
         int t = 0;
         for (Plan.Trip trip : plan.trips) {
             t++;
-            trace.log("Trip " + t + " from #" + trip.source + ":");
-            for (Plan.Deposit d : trip.deposits) {
-                for (int idx : d.picks) {
-                    Plan.Pick p = trip.picks.get(idx);
-                    trace.log("  slot " + p.slot + ": " + p.count + " x " + keys.label(p.key) + " -> #" + d.target);
-                }
+            StringBuilder route = new StringBuilder();
+            for (Plan.Visit v : trip.visits) {
+                if (route.length() > 0) route.append(" -> ");
+                route.append('#')
+                    .append(v.chest);
+                if (v.picks() > 0) route.append(" take ")
+                    .append(v.picks());
+                if (v.deposits() > 0) route.append(" put ")
+                    .append(v.deposits());
+            }
+            trace.log("Trip " + t + ": " + route);
+            for (int i = 0; i < trip.picks.size(); i++) {
+                Plan.Pick p = trip.picks.get(i);
+                trace.log(
+                    "  #" + p.chest
+                        + " slot "
+                        + p.slot
+                        + ": "
+                        + p.count
+                        + " x "
+                        + keys.label(p.key)
+                        + " -> #"
+                        + trip.targetOf(i));
             }
         }
         if (!problems.isEmpty()) {
@@ -877,68 +897,40 @@ public final class Run {
 
     private void queueTrip(int n, final Plan.Trip trip) {
         final String g = "trip " + n;
-        final int src = trip.source;
         final Map<Integer, Integer> pickToSlot = new HashMap<>();
-        // Planned pick → live chest slot. Matched by item and count, so a chest read by looking (which gives totals,
-        // not slots) works too: after combining, a chest holds the same stacks the plan packed.
+        // Planned pick -> live chest slot, matched by item and count when its chest is opened, so a chest read by
+        // looking (totals, not slots) works too: after combining, a chest holds the same stacks the plan packed.
         final Map<Integer, Integer> liveSlot = new HashMap<>();
-        // Before touching anything: reaching and opening the source may fail harmlessly (trip skipped).
-        steps.add(new GoTo(g, true, src));
-        steps.add(new Open(g, true, src));
-        steps.add(new CombineStep(g, src, true));
-        steps.add(new Step(g, true) {
-
-            String describe() {
-                return "check chest #" + src + " still matches the survey";
-            }
-
-            Outcome tick() {
-                ChestModel live = readOpen(src);
-                liveSlot.clear();
-                Set<Integer> used = new TreeSet<>();
-                for (int i = 0; i < trip.picks.size(); i++) { // the planned slot when it still matches
-                    Plan.Pick p = trip.picks.get(i);
-                    if (p.slot < live.size() && live.keys[p.slot] == p.key
-                        && live.counts[p.slot] == p.count
-                        && used.add(p.slot)) liveSlot.put(i, p.slot);
-                }
-                for (int i = 0; i < trip.picks.size(); i++) { // else any unused slot with the same stack
-                    if (liveSlot.containsKey(i)) continue;
-                    Plan.Pick p = trip.picks.get(i);
-                    for (int sl = 0; sl < live.size(); sl++) {
-                        if (live.keys[sl] == p.key && live.counts[sl] == p.count && !used.contains(sl)) {
-                            used.add(sl);
-                            liveSlot.put(i, sl);
-                            break;
-                        }
-                    }
-                    if (!liveSlot.containsKey(i)) {
-                        failure = "chest #" + src
-                            + " changed since the survey (no stack of "
-                            + p.count
-                            + " x "
-                            + keys.label(p.key)
-                            + ")";
-                        return Outcome.FAILED;
-                    }
-                }
-                return Outcome.DONE;
-            }
-        });
+        // Picks whose stack was not there any more (chest changed): skipped, and so are their deposits.
+        final Set<Integer> skipPick = new TreeSet<>();
         final Map<Integer, Integer> pickTarget = new HashMap<>();
-        for (Plan.Deposit d : trip.deposits) for (int idx : d.picks) pickTarget.put(idx, d.target);
-        for (int i = 0; i < trip.picks.size(); i++) {
-            steps.add(new Pick(g, src, i, trip.picks.get(i), pickToSlot, pickTarget.get(i), liveSlot));
-        }
-        steps.add(new VerifyVisit(g, src));
-        steps.add(new Close(g, false));
-        for (Plan.Deposit d : trip.deposits) {
-            steps.add(new GoTo(g, false, d.target));
-            steps.add(new Open(g, false, d.target));
-            steps.add(new CombineStep(g, d.target, true));
-            for (int idx : d.picks) steps.add(new Deposit(g, d.target, idx, pickToSlot, false));
-            steps.add(new VerifyVisit(g, d.target));
+        for (int i = 0; i < trip.picks.size(); i++) pickTarget.put(i, trip.targetOf(i));
+        boolean first = true;
+        for (Plan.Visit v : trip.visits) {
+            final int chest = v.chest;
+            final List<Integer> here = new ArrayList<>();
+            for (Plan.Op op : v.ops) if (!op.deposit) here.add(op.pick);
+            // Only the first visit may fail harmlessly (nothing carried yet): the whole trip is then skipped.
+            steps.add(new GoTo(g, first, chest));
+            steps.add(new Open(g, first, chest));
+            steps.add(new CombineStep(g, chest, true));
+            if (!here.isEmpty()) steps.add(new MatchPicks(g, chest, trip, here, liveSlot, skipPick));
+            for (Plan.Op op : v.ops) {
+                if (op.deposit) steps.add(new Deposit(g, chest, op.pick, pickToSlot, false));
+                else steps.add(
+                    new Pick(
+                        g,
+                        chest,
+                        op.pick,
+                        trip.picks.get(op.pick),
+                        pickToSlot,
+                        pickTarget.get(op.pick),
+                        liveSlot,
+                        skipPick));
+            }
+            steps.add(new VerifyVisit(g, chest));
             steps.add(new Close(g, false));
+            first = false;
         }
         steps.add(new Step(g, false) {
 
@@ -949,12 +941,70 @@ public final class Run {
             Outcome tick() {
                 tripsDone++;
                 if (!carried.isEmpty()) {
-                    trace.warn(carried.size() + " stacks could not be stored; taking them back to chest #" + src + ".");
+                    trace.warn(carried.size() + " stacks could not be stored; taking them back where they came from.");
                     queueReturn("return " + g);
                 }
                 return Outcome.DONE;
             }
         });
+    }
+
+    /**
+     * When a chest is opened for picking: finds the live slot of each planned pick (its planned slot if it still
+     * holds that stack, else any unused slot with the same item and count). A pick with no match is skipped (the chest
+     * changed); its deposit then has nothing to put in. Never fails the trip.
+     */
+    private final class MatchPicks extends Step {
+
+        final int chest;
+        final Plan.Trip trip;
+        final List<Integer> picks;
+        final Map<Integer, Integer> liveSlot;
+        final Set<Integer> skipPick;
+
+        MatchPicks(String g, int chest, Plan.Trip trip, List<Integer> picks, Map<Integer, Integer> liveSlot,
+            Set<Integer> skipPick) {
+            super(g, false);
+            this.chest = chest;
+            this.trip = trip;
+            this.picks = picks;
+            this.liveSlot = liveSlot;
+            this.skipPick = skipPick;
+        }
+
+        String describe() {
+            return "match planned stacks in chest #" + chest;
+        }
+
+        Outcome tick() {
+            if (!requireOpen(chest)) return Outcome.FAILED;
+            ChestModel live = readOpen(chest);
+            Set<Integer> used = new TreeSet<>();
+            for (int i : picks) {
+                Plan.Pick p = trip.picks.get(i);
+                if (p.slot < live.size() && live.keys[p.slot] == p.key
+                    && live.counts[p.slot] == p.count
+                    && used.add(p.slot)) liveSlot.put(i, p.slot);
+            }
+            for (int i : picks) {
+                if (liveSlot.containsKey(i)) continue;
+                Plan.Pick p = trip.picks.get(i);
+                for (int sl = 0; sl < live.size() && !liveSlot.containsKey(i); sl++) {
+                    if (live.keys[sl] == p.key && live.counts[sl] == p.count && used.add(sl)) liveSlot.put(i, sl);
+                }
+                if (!liveSlot.containsKey(i)) {
+                    skipPick.add(i);
+                    trace.warn(
+                        "Chest #" + chest
+                            + " changed since the survey: no stack of "
+                            + p.count
+                            + " x "
+                            + keys.label(p.key)
+                            + "; skipping it");
+                }
+            }
+            return Outcome.DONE;
+        }
     }
 
     /** Takes every carried stack back to its source chest. */
@@ -1202,13 +1252,14 @@ public final class Run {
         final int src, index, target;
         final Plan.Pick pick;
         final Map<Integer, Integer> pickToSlot, liveSlot;
+        final Set<Integer> skipPick;
         int phase;
         Map<Integer, Long> before;
         Slot chestSlot, carrySlot;
         int carryIndex;
 
         Pick(String g, int src, int index, Plan.Pick pick, Map<Integer, Integer> pickToSlot, Integer target,
-            Map<Integer, Integer> liveSlot) {
+            Map<Integer, Integer> liveSlot, Set<Integer> skipPick) {
             super(g, false);
             this.src = src;
             this.index = index;
@@ -1216,6 +1267,7 @@ public final class Run {
             this.pickToSlot = pickToSlot;
             this.target = target == null ? -1 : target;
             this.liveSlot = liveSlot;
+            this.skipPick = skipPick;
         }
 
         int slot() {
@@ -1230,6 +1282,7 @@ public final class Run {
         Outcome tick() {
             EntityClientPlayerMP p = mc.thePlayer;
             if (phase == 0) {
+                if (skipPick.contains(index)) return Outcome.DONE;
                 if (unreachable.contains(target)) {
                     trace.step(
                         "Leaving " + pick.count
@@ -1264,7 +1317,13 @@ public final class Run {
                         break;
                     }
                 }
-                if (carryIndex < 0) return fail("no empty carry slot left");
+                if (carryIndex < 0) {
+                    // Only when stacks meant for an unreachable chest are still carried: leave this one for later.
+                    skipPick.add(index);
+                    trace.warn("No free carry slot (stacks from a skipped chest are still carried); leaving "
+                        + pick.count + " x " + keys.label(pick.key) + " in #" + src);
+                    return Outcome.DONE;
+                }
                 carrySlot = GuiOps.playerSlot(p.openContainer, p, carryIndex);
                 if (carrySlot == null) return fail("inventory slot " + carryIndex + " not shown in this chest screen");
                 before = GuiOps.totals(p.openContainer, p, keys);
@@ -1564,6 +1623,7 @@ public final class Run {
         for (Step s : steps) {
             if (s instanceof GoTo) return ((GoTo) s).id;
             if (s instanceof Open || s instanceof Pick
+                || s instanceof MatchPicks
                 || s instanceof Deposit
                 || s instanceof VerifyVisit
                 || s instanceof Close

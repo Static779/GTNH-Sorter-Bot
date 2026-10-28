@@ -102,7 +102,7 @@ public class Sweep {
         "execTicks", "execWalkPct", "surveyTicksOpen", "surveyTicksLook", "minutesOpenSurvey", "minutesLocalRead",
         "purityPct", "fineCatsPerChest", "scatterMax", "scatteredBuckets", "contiguousPct", "relatedDist",
         "tightBuckets", "minFreePct", "avgFreePct", "nearEmptyChests", "fillStdDev", "planMs", "checkFails",
-        "deterministic" };
+        "deterministic", "visits", "walkLowerBound", "routeVsBound" };
 
     public static void main(String[] args) throws Exception {
         String file = args.length > 0 ? args[0] : "tools/sweep/items-012605.tsv";
@@ -380,25 +380,43 @@ public class Sweep {
         BlockPos at = start;
         int lastChest = -1;
         Set<Integer> opened = new HashSet<>();
+        int visits = 0;
+        double carriedPeak = 0;
+        Set<Integer> routeChests = new HashSet<>();
         for (Plan.Trip t : plan.trips) {
-            boolean reuse = t.source == lastChest;
-            if (reuse) kept++;
-            double dd = d(at, pos.get(t.source));
-            walk += dd;
-            walkTicks += WALK_TICKS_PER_BLOCK * Math.max(0, dd - REACH);
-            if (!reuse) execTicks += OPEN_TICKS;
-            execTicks += firstOpenCost(t.source, opened, poursIn) + t.picks.size() + CHECK_TICKS;
-            at = pos.get(t.source);
-            for (Plan.Deposit dp : t.deposits) {
-                double dx = d(at, pos.get(dp.target));
-                walk += dx;
-                walkTicks += WALK_TICKS_PER_BLOCK * Math.max(0, dx - REACH);
-                execTicks += OPEN_TICKS + firstOpenCost(dp.target, opened, poursIn) + dp.picks.size() + CHECK_TICKS;
-                at = pos.get(dp.target);
-                deposits++;
-                lastChest = dp.target;
+            carriedPeak += t.maxCarried();
+            for (Plan.Visit v : t.visits) {
+                visits++;
+                routeChests.add(v.chest);
+                boolean reuse = v.chest == lastChest;
+                if (reuse) kept++;
+                double dd = d(at, pos.get(v.chest));
+                walk += dd;
+                walkTicks += WALK_TICKS_PER_BLOCK * Math.max(0, dd - REACH);
+                if (!reuse) execTicks += OPEN_TICKS;
+                execTicks += firstOpenCost(v.chest, opened, poursIn) + v.ops.size() + CHECK_TICKS;
+                if (v.deposits() > 0) deposits++;
+                at = pos.get(v.chest);
+                lastChest = v.chest;
             }
         }
+        // Lower bound on walking: any route from the start through every chest it must open is at least as long as
+        // the minimum spanning tree over those chests and the start.
+        double bound = mst(start, routeChests, pos);
+        // Second bound: every block walked carries at most `carry` stacks, and each moved stack must travel at least
+        // from its chest to the nearest chest of its group.
+        double stackTravel = 0;
+        for (Plan.Trip t : plan.trips) {
+            for (Plan.Pick pk : t.picks) {
+                String b = a.effective(items.get(pk.key).category);
+                double near = Double.MAX_VALUE;
+                for (ChestModel c : byBucket.getOrDefault(b, Collections.<ChestModel>emptyList())) {
+                    if (c.id != pk.chest) near = Math.min(near, d(pos.get(pk.chest), c.pos));
+                }
+                if (near != Double.MAX_VALUE) stackTravel += near;
+            }
+        }
+        bound = Math.max(bound, stackTravel / p.carry);
         // chests with pours that no trip opened get a tidy visit
         for (ChestModel c : chests) {
             if (!opened.contains(c.id) && poursIn.get(c.id) > 0) {
@@ -437,14 +455,35 @@ public class Sweep {
             after == 0 ? 0 : 100.0 * misc / after, stranded, stacks == 0 ? 0 : 100.0 * stranded / stacks, moves,
             stacks == 0 ? 0 : 100.0 * moves / stacks, plan.trips.size(),
             plan.trips.isEmpty() ? 0 : (double) moves / plan.trips.size(),
-            plan.trips.isEmpty() ? 0 : 100.0 * moves / plan.trips.size() / p.carry,
+            plan.trips.isEmpty() ? 0 : 100.0 * carriedPeak / plan.trips.size() / p.carry,
             plan.trips.isEmpty() ? 0 : (double) deposits / plan.trips.size(), kept, walk,
             moves == 0 ? 0 : walk / moves, execTicks, execTicks == 0 ? 0 : 100.0 * walkTicks / execTicks, surveyOpen,
             surveyLook, (surveyOpen + execTicks) / 1200.0, (1 + execTicks) / 1200.0,
             after == 0 ? 100 : 100.0 * inPlace / after, fineChests == 0 ? 0 : fineSum / fineChests, scatterMax,
             scattered, multi == 0 ? 100 : 100.0 * contiguous / multi, relN == 0 ? 0 : relSum / relN, tight,
             byBucket.isEmpty() ? 0 : minFree, byBucket.isEmpty() ? 0 : freeSum / byBucket.size(), nearEmpty,
-            stdDev(fills), ms, checkFails, deterministic };
+            stdDev(fills), ms, checkFails, deterministic, visits, bound, bound <= 0 ? 1 : walk / bound };
+    }
+
+    /** Prim's minimum spanning tree weight over the start and the given chests. */
+    static double mst(BlockPos start, Set<Integer> ids, Map<Integer, BlockPos> pos) {
+        List<BlockPos> pts = new ArrayList<>();
+        pts.add(start);
+        for (int id : ids) pts.add(pos.get(id));
+        int n = pts.size();
+        double[] best = new double[n];
+        boolean[] in = new boolean[n];
+        java.util.Arrays.fill(best, Double.MAX_VALUE);
+        best[0] = 0;
+        double total = 0;
+        for (int k = 0; k < n; k++) {
+            int u = -1;
+            for (int i = 0; i < n; i++) if (!in[i] && (u < 0 || best[i] < best[u])) u = i;
+            in[u] = true;
+            total += best[u];
+            for (int i = 0; i < n; i++) if (!in[i]) best[i] = Math.min(best[i], d(pts.get(u), pts.get(i)));
+        }
+        return total;
     }
 
     static double firstOpenCost(int chest, Set<Integer> opened, Map<Integer, Integer> poursIn) {

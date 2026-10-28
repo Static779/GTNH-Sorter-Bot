@@ -112,12 +112,10 @@ public class Replay {
         Plan p = Planner.plan(surveyed, items, a, 27, 10000, surveyed.get(0).pos);
         int chained = 0;
         for (int i = 1; i < p.trips.size(); i++) {
-            Plan.Trip prev = p.trips.get(i - 1);
-            int last = prev.deposits.isEmpty() ? prev.source : prev.deposits.get(prev.deposits.size() - 1).target;
-            if (p.trips.get(i).source == last) chained++;
+            if (p.trips.get(i).source() == p.trips.get(i - 1).end()) chained++;
         }
         System.out.println("Trips starting at the chest the last trip ended at (kept open): " + chained + " of "
-            + Math.max(0, p.trips.size() - 1));
+            + Math.max(0, p.trips.size() - 1) + "; chest visits: " + p.visits());
         List<String> problems = PlanChecker.check(surveyed, p, items, 27);
         System.out.println("Plan: " + p.trips.size() + " trips, " + p.stackMoves() + " stack moves, "
             + p.stacksLeftNoRoom + " stacks left for lack of room; check " + (problems.isEmpty() ? "OK" : problems));

@@ -43,7 +43,8 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
   `layoutWeight` sets the balance: 0 = only move what is out of place, 2 (default) = each group's chests side by side; in a 1,116-room test this kept 74% of groups in touching chests (54% at 1) for the same number of moves.
 - **Moves**: whole stacks only, and only when the target chest has room for the whole stack. Otherwise the stack stays put.
 - **Combining**: partial stacks of the same item in a chest are poured together the first time the run opens it (20 + 30 → 50). Chests no trip opens are visited at the end to combine theirs (`combineStacks`).
-- **Trip order**: each trip starts at the nearest chest with something to move, usually the one you are standing at; if that chest is still open, it stays open.
+- **Route**: it plans one route through all the chests before moving anything. At each chest it puts in what belongs there, takes out what doesn't (stacks with the nearest destination first), then puts in again, so one trip can pick up and drop off at many chests, and two full chests can swap stacks. The next chest is the one with the most work for the least walking. A trip stops taking new stacks after 8 visits (or twice your free slots) and only delivers, so it always ends empty-handed. If the next trip starts at the chest that is already open, it stays open.
+  The exact shortest route can't be computed for real rooms (it's a pickup-and-delivery problem, which contains the travelling-salesman problem). On 369 small rooms where it can be computed, the planner's route was on average 9% longer than the shortest (median 4%, worst 71%). On 77 test rooms it walks 31% less and finishes ~24% sooner than the old one-source-chest-per-trip planner, with the same stacks moved.
 - **Capacity**: before moving, the trace lists slots used and free, buckets against chests, and each bucket's free slots, and warns when a bucket will be nearly full.
 
 ## Why it can't scramble or lose items
@@ -89,7 +90,7 @@ Group lines look like `metals: ingot*, nugget*, block` (a trailing `*` matches a
 gradlew.bat spotlessApply
 gradlew.bat build
 ```
-**Without Minecraft:** `tools/test-core.sh` runs the logic tests (categorizing, grouping, assigning, planning on 6000 random chest setups, pathfinding). `tools/check-stubs.sh` is a quick typo check. `tools/replay-trace.sh <trace.log> [minStacks] [layoutWeight] [groups-file]` re-plans a real run from its trace with the current code, so grouping changes can be checked against your actual chests. `tools/sweep.sh` runs the planner on generated rooms (items from a real trace), varying one setting at a time, and prints the shortfalls per setting (results: `docs/data/sweep-1116-rooms.csv`; `python3 tools/sweep_report.py <csv>` summarises them).
+**Without Minecraft:** `tools/test-core.sh` runs the logic tests (categorizing, grouping, assigning, planning on 6000 random chest setups, pathfinding). `tools/check-stubs.sh` is a quick typo check. `tools/replay-trace.sh <trace.log> [minStacks] [layoutWeight] [groups-file]` re-plans a real run from its trace with the current code, so grouping changes can be checked against your actual chests. `tools/optgap.sh` compares planned routes with exact shortest routes on small rooms. `tools/sweep.sh` runs the planner on generated rooms (items from a real trace), varying one setting at a time, and prints the shortfalls per setting (results: `docs/data/sweep-1116-rooms.csv`; `python3 tools/sweep_report.py <csv>` summarises them).
 
 ## Layout
 | Path | What |

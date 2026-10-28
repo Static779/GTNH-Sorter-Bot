@@ -5,15 +5,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/** Output of {@link Planner}: the trips to make and the state the chests should end in. Immutable after build. */
+/**
+ * Output of {@link Planner}: one route through the chests, cut into trips. A trip starts and ends with nothing
+ * carried; in between it visits chests in order, and at each visit takes stacks out and puts carried stacks in, in
+ * the order given (putting in can come after taking out, so a full chest can swap with another). Immutable.
+ */
 public final class Plan {
 
-    /** Take one whole stack out of a source slot. */
+    /** Take one whole stack out of a slot of a chest. */
     public static final class Pick {
 
-        public final int slot, key, count;
+        public final int chest, slot, key, count;
 
-        public Pick(int slot, int key, int count) {
+        public Pick(int chest, int slot, int key, int count) {
+            this.chest = chest;
             this.slot = slot;
             this.key = key;
             this.count = count;
@@ -21,40 +26,92 @@ public final class Plan {
 
         @Override
         public String toString() {
-            return "slot " + slot + ": " + count + " x key " + key;
+            return "#" + chest + " slot " + slot + ": " + count + " x key " + key;
         }
     }
 
-    /** Put some of the trip's picked stacks into one target chest. */
-    public static final class Deposit {
+    /** One action at a visit: take pick {@code pick} out of this chest, or put carried pick {@code pick} in. */
+    public static final class Op {
 
-        public final int target;
-        /** Indexes into {@link Trip#picks}, in the order they are placed. */
-        public final List<Integer> picks;
+        public final boolean deposit;
+        /** Index into {@link Trip#picks}. */
+        public final int pick;
 
-        public Deposit(int target, List<Integer> picks) {
-            this.target = target;
-            this.picks = Collections.unmodifiableList(new ArrayList<>(picks));
+        public Op(boolean deposit, int pick) {
+            this.deposit = deposit;
+            this.pick = pick;
+        }
+
+        @Override
+        public String toString() {
+            return (deposit ? "put " : "take ") + pick;
         }
     }
 
-    /** One loop: open the source, pick stacks into empty inventory slots, then visit each target in order. */
+    /** Open one chest and do its ops in order. */
+    public static final class Visit {
+
+        public final int chest;
+        public final List<Op> ops;
+
+        public Visit(int chest, List<Op> ops) {
+            this.chest = chest;
+            this.ops = Collections.unmodifiableList(new ArrayList<>(ops));
+        }
+
+        public int picks() {
+            int n = 0;
+            for (Op o : ops) if (!o.deposit) n++;
+            return n;
+        }
+
+        public int deposits() {
+            return ops.size() - picks();
+        }
+    }
+
     public static final class Trip {
 
-        public final int source;
         public final List<Pick> picks;
-        public final List<Deposit> deposits;
+        public final List<Visit> visits;
 
-        public Trip(int source, List<Pick> picks, List<Deposit> deposits) {
-            this.source = source;
+        public Trip(List<Pick> picks, List<Visit> visits) {
             this.picks = Collections.unmodifiableList(new ArrayList<>(picks));
-            this.deposits = Collections.unmodifiableList(new ArrayList<>(deposits));
+            this.visits = Collections.unmodifiableList(new ArrayList<>(visits));
+        }
+
+        /** The first chest visited. */
+        public int source() {
+            return visits.isEmpty() ? -1 : visits.get(0).chest;
+        }
+
+        /** The last chest visited. */
+        public int end() {
+            return visits.isEmpty() ? -1 : visits.get(visits.size() - 1).chest;
+        }
+
+        /** Most stacks carried at once on this trip. */
+        public int maxCarried() {
+            int now = 0, max = 0;
+            for (Visit v : visits) {
+                for (Op o : v.ops) {
+                    now += o.deposit ? -1 : 1;
+                    max = Math.max(max, now);
+                }
+            }
+            return max;
         }
 
         public int itemCount() {
             int n = 0;
             for (Pick p : picks) n += p.count;
             return n;
+        }
+
+        /** The chest pick {@code pick} is put into, or -1. */
+        public int targetOf(int pick) {
+            for (Visit v : visits) for (Op o : v.ops) if (o.deposit && o.pick == pick) return v.chest;
+            return -1;
         }
     }
 
@@ -89,6 +146,12 @@ public final class Plan {
     public int stackMoves() {
         int n = 0;
         for (Trip t : trips) n += t.picks.size();
+        return n;
+    }
+
+    public int visits() {
+        int n = 0;
+        for (Trip t : trips) n += t.visits.size();
         return n;
     }
 

@@ -9,10 +9,11 @@ import java.util.TreeMap;
 /**
  * Replays a plan on copies of the surveyed chests and lists every rule it breaks. The client refuses to execute a
  * plan with any problem. Checks:
- * 1. Every pick takes exactly what the source slot holds (key and count) and each slot is picked at most once.
- * 2. Every picked stack is deposited exactly once, into a chest whose category is the stack's category.
+ * 1. Every pick takes exactly what its slot holds at that moment (key and count), once.
+ * 2. Every picked stack is put in exactly once, later in the same trip, into a chest of its category, never the
+ * chest it came from.
  * 3. Every deposit fits completely.
- * 4. Trip size is within the carry limit.
+ * 4. No more stacks are carried at once than there are carry slots, and nothing is carried at the end of a trip.
  * 5. Item totals across all chests are identical before and after (nothing created or lost).
  * 6. The replay ends in exactly the state the plan says it will.
  */
@@ -30,79 +31,81 @@ public final class PlanChecker {
         for (Plan.Trip trip : plan.trips) {
             tripNo++;
             String where = "trip " + tripNo;
-            ChestModel src = sim.get(trip.source);
-            if (src == null) {
-                problems.add(where + ": unknown source chest " + trip.source);
-                continue;
-            }
-            if (trip.picks.size() > carrySlots) {
-                problems.add(where + ": " + trip.picks.size() + " stacks but only " + carrySlots + " carry slots");
-            }
-            boolean[] picked = new boolean[src.size()];
-            for (Plan.Pick p : trip.picks) {
-                if (p.slot < 0 || p.slot >= src.size()) {
-                    problems.add(where + ": slot " + p.slot + " out of range");
+            int[] state = new int[trip.picks.size()]; // 0 not taken, 1 carried, 2 put in
+            int carried = 0;
+            for (Plan.Visit v : trip.visits) {
+                ChestModel c = sim.get(v.chest);
+                if (c == null) {
+                    problems.add(where + ": unknown chest " + v.chest);
                     continue;
                 }
-                if (picked[p.slot]) problems.add(where + ": slot " + p.slot + " picked twice");
-                picked[p.slot] = true;
-                if (src.keys[p.slot] != p.key || src.counts[p.slot] != p.count) {
-                    problems.add(
-                        where + ": slot "
-                            + p.slot
-                            + " holds "
-                            + src.counts[p.slot]
-                            + " x key "
-                            + src.keys[p.slot]
-                            + ", plan picks "
-                            + p.count
-                            + " x key "
-                            + p.key);
-                }
-                src.set(p.slot, ChestModel.EMPTY, 0);
-            }
-            int[] depositedTimes = new int[trip.picks.size()];
-            for (Plan.Deposit d : trip.deposits) {
-                ChestModel tgt = sim.get(d.target);
-                if (tgt == null) {
-                    problems.add(where + ": unknown target chest " + d.target);
-                    continue;
-                }
-                if (d.target == trip.source) problems.add(where + ": deposits back into its own source");
-                for (int idx : d.picks) {
-                    if (idx < 0 || idx >= trip.picks.size()) {
-                        problems.add(where + ": deposit refers to pick " + idx);
+                for (Plan.Op op : v.ops) {
+                    if (op.pick < 0 || op.pick >= trip.picks.size()) {
+                        problems.add(where + ": op refers to pick " + op.pick);
                         continue;
                     }
-                    depositedTimes[idx]++;
-                    Plan.Pick p = trip.picks.get(idx);
-                    ItemInfo info = items.get(p.key);
-                    if (info == null) {
-                        problems.add(where + ": no item info for key " + p.key);
-                        continue;
+                    Plan.Pick p = trip.picks.get(op.pick);
+                    if (!op.deposit) {
+                        if (state[op.pick] != 0) problems.add(where + ": pick " + op.pick + " taken twice");
+                        if (p.chest != v.chest) problems.add(where + ": pick " + op.pick + " taken at the wrong chest");
+                        if (p.slot < 0 || p.slot >= c.size()) {
+                            problems.add(where + ": slot " + p.slot + " out of range");
+                            continue;
+                        }
+                        if (c.keys[p.slot] != p.key || c.counts[p.slot] != p.count) {
+                            problems.add(
+                                where + ": #"
+                                    + v.chest
+                                    + " slot "
+                                    + p.slot
+                                    + " holds "
+                                    + c.counts[p.slot]
+                                    + " x key "
+                                    + c.keys[p.slot]
+                                    + ", plan takes "
+                                    + p.count
+                                    + " x key "
+                                    + p.key);
+                        }
+                        c.set(p.slot, ChestModel.EMPTY, 0);
+                        state[op.pick] = 1;
+                        if (++carried > carrySlots) {
+                            problems.add(where + ": carries " + carried + " stacks but has " + carrySlots + " slots");
+                        }
+                    } else {
+                        if (state[op.pick] != 1) {
+                            problems.add(where + ": pick " + op.pick + " put in while not carried");
+                            continue;
+                        }
+                        if (p.chest == v.chest) problems.add(where + ": pick " + op.pick + " put back where it came from");
+                        ItemInfo info = items.get(p.key);
+                        if (info == null) {
+                            problems.add(where + ": no item info for key " + p.key);
+                            continue;
+                        }
+                        if (!plan.effective(info.category)
+                            .equals(plan.chestCategory.get(v.chest))) {
+                            problems.add(
+                                where + ": "
+                                    + info.label
+                                    + " ["
+                                    + info.category
+                                    + "] sent to chest "
+                                    + v.chest
+                                    + " ["
+                                    + plan.chestCategory.get(v.chest)
+                                    + "]");
+                        }
+                        int left = c.place(p.key, p.count, info.maxStack);
+                        if (left != 0)
+                            problems.add(where + ": " + left + " x " + info.label + " do not fit in chest " + v.chest);
+                        state[op.pick] = 2;
+                        carried--;
                     }
-                    if (!plan.effective(info.category)
-                        .equals(plan.chestCategory.get(d.target))) {
-                        problems.add(
-                            where + ": "
-                                + info.label
-                                + " ["
-                                + info.category
-                                + "] sent to chest "
-                                + d.target
-                                + " ["
-                                + plan.chestCategory.get(d.target)
-                                + "]");
-                    }
-                    int left = tgt.place(p.key, p.count, info.maxStack);
-                    if (left != 0)
-                        problems.add(where + ": " + left + " x " + info.label + " do not fit in chest " + d.target);
                 }
             }
-            for (int i = 0; i < depositedTimes.length; i++) {
-                if (depositedTimes[i] != 1) {
-                    problems.add(where + ": pick " + i + " deposited " + depositedTimes[i] + " times");
-                }
+            for (int i = 0; i < state.length; i++) {
+                if (state[i] != 2) problems.add(where + ": pick " + i + (state[i] == 0 ? " never taken" : " never put in"));
             }
         }
 
