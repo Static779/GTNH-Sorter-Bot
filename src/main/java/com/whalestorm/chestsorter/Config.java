@@ -99,7 +99,8 @@ public class Config {
             if (s.containsKey("layoutWeight") && "1.0".equals(
                 s.get("layoutWeight")
                     .getString()
-                    .trim())) s.remove("layoutWeight");
+                    .trim()))
+                s.remove("layoutWeight");
         }
         c.get(Configuration.CATEGORY_GENERAL, "configVersion", CONFIG_VERSION)
             .set(CONFIG_VERSION);
