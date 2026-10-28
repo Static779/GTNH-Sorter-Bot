@@ -40,7 +40,7 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
   3. one category's chests side by side,
   4. related categories near each other (ore → rawOre → crushed → crushedPurified → dustImpure → dust → dustTiny; ingot ↔ nugget ↔ block; plate ↔ plateDouble ↔ ...; same-mod groups).
 
-  `layoutWeight` sets the balance: 0 = only move what is out of place, 1 = balanced (default), higher = tidier layout even if more moves.
+  `layoutWeight` sets the balance: 0 = only move what is out of place, 2 (default) = each group's chests side by side; in a 1,116-room test this kept 74% of groups in touching chests (54% at 1) for the same number of moves.
 - **Moves**: whole stacks only, and only when the target chest has room for the whole stack. Otherwise the stack stays put.
 - **Combining**: partial stacks of the same item in a chest are poured together the first time the run opens it (20 + 30 → 50). Chests no trip opens are visited at the end to combine theirs (`combineStacks`).
 - **Trip order**: each trip starts at the nearest chest with something to move, usually the one you are standing at; if that chest is still open, it stays open.
@@ -68,7 +68,7 @@ In game: **Mods → Chest Sorter → Config**, `/cs config`, or bind **Open sett
 
 | Section | Settings |
 |---|---|
-| Sorting | scan radius (16), stacks for a chest of its own (6), layout tidiness (1.0), max trips (300), category groups |
+| Sorting | scan radius (16), singleplayer direct read, HoloInventory read, combine stacks, stacks for a chest of its own (6), keep free (15%), layout tidiness (2.0), max trips (300), category groups |
 | Movement | walk to chests, sprint, reach (4.0), path search limit, stuck after, new paths before skipping |
 | Safety and pacing | ticks between transfers (1), server wait before checks (4, raise on laggy servers), open timeout, check every transfer, re-check chests at the end, hostile radius (8), health fraction (0.5) |
 | Debug | trace file, every step in chat |
@@ -89,7 +89,7 @@ Group lines look like `metals: ingot*, nugget*, block` (a trailing `*` matches a
 gradlew.bat spotlessApply
 gradlew.bat build
 ```
-**Without Minecraft:** `tools/test-core.sh` runs the logic tests (categorizing, grouping, assigning, planning on 6000 random chest setups, pathfinding). `tools/check-stubs.sh` is a quick typo check. `tools/replay-trace.sh <trace.log> [minStacks] [layoutWeight] [groups-file]` re-plans a real run from its trace with the current code, so grouping changes can be checked against your actual chests. `tools/sweep.sh` runs the planner on generated rooms (items from a real trace), varying one setting at a time, and prints the shortfalls per setting (results: `docs/data/sweep-2026-10-28.csv`).
+**Without Minecraft:** `tools/test-core.sh` runs the logic tests (categorizing, grouping, assigning, planning on 6000 random chest setups, pathfinding). `tools/check-stubs.sh` is a quick typo check. `tools/replay-trace.sh <trace.log> [minStacks] [layoutWeight] [groups-file]` re-plans a real run from its trace with the current code, so grouping changes can be checked against your actual chests. `tools/sweep.sh` runs the planner on generated rooms (items from a real trace), varying one setting at a time, and prints the shortfalls per setting (results: `docs/data/sweep-1116-rooms.csv`; `python3 tools/sweep_report.py <csv>` summarises them).
 
 ## Layout
 | Path | What |

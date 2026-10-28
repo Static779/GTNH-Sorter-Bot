@@ -26,7 +26,7 @@ public class Config {
     // sorting
     public static int scanRadius = 16;
     /** 0 = only minimise moves; higher = tidier layout (big categories together, related ones near). */
-    public static double layoutWeight = 1.0;
+    public static double layoutWeight = 2.0;
     /** Smallest group of stacks that gets a chest of its own when there are spare chests. */
     public static int minStacksForOwnChest = 6;
     /** Singleplayer: read chests from the built-in server instead of opening them. */
@@ -63,7 +63,7 @@ public class Config {
     public static boolean verboseChat = false;
 
     /** Bump when defaults or layout change in a way existing config files should pick up. */
-    private static final int CONFIG_VERSION = 3;
+    private static final int CONFIG_VERSION = 4;
 
     /** The loaded file; null until {@link #init}. */
     public static Configuration config;
@@ -91,6 +91,15 @@ public class Config {
             move(Configuration.CATEGORY_GENERAL, CAT_SORT, "scanRadius");
             move(Configuration.CATEGORY_GENERAL, CAT_SORT, "layoutWeight");
             move(CAT_SAFETY, CAT_SORT, "maxTrips");
+        }
+        if (version < 4) {
+            // v4: tidiness default 1 -> 2 (sweep of 1116 rooms: groups whose chests touch 54% -> 74%, same moves,
+            // nothing stranded). Only an untouched old default is changed.
+            ConfigCategory s = c.getCategory(CAT_SORT);
+            if (s.containsKey("layoutWeight") && "1.0".equals(
+                s.get("layoutWeight")
+                    .getString()
+                    .trim())) s.remove("layoutWeight");
         }
         c.get(Configuration.CATEGORY_GENERAL, "configVersion", CONFIG_VERSION)
             .set(CONFIG_VERSION);
@@ -140,11 +149,11 @@ public class Config {
         layoutWeight = dbl(
             CAT_SORT,
             "layoutWeight",
-            1.0,
+            2.0,
             0.0,
             10.0,
-            "How much a tidy layout matters against moving fewer stacks. 0 = keep chests' current roles. 1 = balanced. "
-                + "Higher = each category's chests together and related ones next to each other, even if more moves.");
+            "How much a tidy layout matters against moving fewer stacks. 0 = keep chests' current roles. 2 (default) = "
+                + "each group's chests side by side and related groups near each other, at almost no extra moves.");
         Property g = c.get(
             CAT_SORT,
             "groups",
