@@ -76,8 +76,13 @@ public class Config {
         stuckTicks = c.getInt("stuckTicks", CAT_MOVE, stuckTicks, 10, 400, "Ticks without progress before re-pathing.");
         maxRepaths = c.getInt("maxRepaths", CAT_MOVE, maxRepaths, 0, 20, "Re-path attempts before giving up a chest.");
 
-        clickDelayTicks = c
-            .getInt("clickDelayTicks", CAT_SAFETY, clickDelayTicks, 1, 40, "Ticks between stack transfers (1 = one stack per tick).");
+        clickDelayTicks = c.getInt(
+            "clickDelayTicks",
+            CAT_SAFETY,
+            clickDelayTicks,
+            1,
+            40,
+            "Ticks between stack transfers (1 = one stack per tick).");
         settleTicks = c.getInt(
             "settleTicks",
             CAT_SAFETY,

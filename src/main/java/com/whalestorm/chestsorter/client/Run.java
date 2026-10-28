@@ -933,7 +933,8 @@ public final class Run {
             if (p.inventory.getItemStack() != null) return fail("cursor not empty before closing chest #" + id);
             Map<Integer, Long> now = GuiOps.totals(p.openContainer, p, keys);
             if (!now.equals(openTotals)) {
-                return fail("item totals in chest #" + id + " + inventory changed: " + GuiOps.diff(openTotals, now, keys));
+                return fail(
+                    "item totals in chest #" + id + " + inventory changed: " + GuiOps.diff(openTotals, now, keys));
             }
             for (int i = 0; i < 36; i++) {
                 ItemStack st = p.inventory.getStackInSlot(i);
@@ -951,8 +952,12 @@ public final class Run {
                     en = openInvCounts[i];
                 }
                 if (k != ek || n != en) {
-                    return fail("inventory slot " + i + " holds " + GuiOps.describe(st, keys) + ", expected "
-                        + (ek == ChestModel.EMPTY ? "empty" : en + " x " + keys.label(ek)));
+                    return fail(
+                        "inventory slot " + i
+                            + " holds "
+                            + GuiOps.describe(st, keys)
+                            + ", expected "
+                            + (ek == ChestModel.EMPTY ? "empty" : en + " x " + keys.label(ek)));
                 }
             }
             after.put(id, readOpen(id));
