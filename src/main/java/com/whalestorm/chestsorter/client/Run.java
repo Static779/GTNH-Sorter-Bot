@@ -824,7 +824,8 @@ public final class Run {
         t = 0;
         for (Plan.Trip trip : plan.trips) {
             t++;
-            for (int vi = 0; vi < trip.visits.size(); vi++) lastVisit.put(trip.visits.get(vi).chest, new int[] { t, vi });
+            for (int vi = 0; vi < trip.visits.size(); vi++)
+                lastVisit.put(trip.visits.get(vi).chest, new int[] { t, vi });
         }
         t = 0;
         for (Plan.Trip trip : plan.trips) queueTrip(++t, trip);
