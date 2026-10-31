@@ -39,6 +39,8 @@ public class Config {
     public static int keepFreePercent = 15;
     /** Category group lines, see {@link Taxonomy}. */
     public static String[] groups = Taxonomy.DEFAULT_GROUPS.clone();
+    /** After the run is done with a chest, have Inventory Bogosorter order its slots (when installed). */
+    public static boolean bogoSortChests = true;
     /** Extra chest counts compared by /cs plan and /cs whatif, e.g. "6, 12, 24"; empty = no comparison. */
     public static String extraChests = "6, 12, 24";
 
@@ -167,6 +169,13 @@ public class Config {
                 + "Anything not listed is grouped by mod, or goes to 'misc' when chests run short.");
         g.setLanguageKey(LANG + "groups");
         groups = g.getStringList();
+        bogoSortChests = c.getBoolean(
+            "bogoSortChests",
+            CAT_SORT,
+            true,
+            "With Inventory Bogosorter installed (GTNH has it): after the run is done with a chest, order its slots "
+                + "with your Bogosorter sort rules. Checked like every other step; does nothing without Bogosorter.",
+            LANG + "bogoSortChests");
         Property x = c.get(
             CAT_SORT,
             "extraChests",
@@ -205,6 +214,7 @@ public class Config {
                 "localRead",
                 "holoRead",
                 "combineStacks",
+                "bogoSortChests",
                 "minStacksForOwnChest",
                 "keepFreePercent",
                 "layoutWeight",

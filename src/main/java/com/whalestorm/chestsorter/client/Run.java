@@ -611,6 +611,9 @@ public final class Run {
     // planning
     // =====================================================================================================
 
+    /** chest id -> {trip number, visit index} of its last visit in the plan: where Bogosorter sorts it. */
+    private final Map<Integer, int[]> lastVisit = new HashMap<>();
+
     /** Extra-chest comparison from the planning thread (plan-only runs), printed at the end of the plan. */
     private List<WhatIf.Row> whatIf;
     private long whatIfMs;
@@ -817,6 +820,12 @@ public final class Run {
             return;
         }
         state = SorterState.EXECUTE;
+        lastVisit.clear();
+        t = 0;
+        for (Plan.Trip trip : plan.trips) {
+            t++;
+            for (int vi = 0; vi < trip.visits.size(); vi++) lastVisit.put(trip.visits.get(vi).chest, new int[] { t, vi });
+        }
         t = 0;
         for (Plan.Trip trip : plan.trips) queueTrip(++t, trip);
     }
@@ -922,6 +931,10 @@ public final class Run {
                 }
             });
             steps.add(new CombineStep(g, id, true));
+            if (Config.bogoSortChests && BogoSort.available()) {
+                steps.add(new BogoSortStep(g, id));
+                steps.add(new VerifyVisit(g, id));
+            }
             steps.add(new Close(g, true));
         }
         return true;
@@ -938,7 +951,9 @@ public final class Run {
         final Map<Integer, Integer> pickTarget = new HashMap<>();
         for (int i = 0; i < trip.picks.size(); i++) pickTarget.put(i, trip.targetOf(i));
         boolean first = true;
+        int vi = -1;
         for (Plan.Visit v : trip.visits) {
+            vi++;
             final int chest = v.chest;
             final List<Integer> here = new ArrayList<>();
             for (Plan.Op op : v.ops) if (!op.deposit) here.add(op.pick);
@@ -960,6 +975,8 @@ public final class Run {
                         liveSlot,
                         skipPick));
             }
+            int[] last = lastVisit.get(chest);
+            if (last != null && last[0] == n && last[1] == vi) steps.add(new BogoSortStep(g, chest));
             steps.add(new VerifyVisit(g, chest));
             steps.add(new Close(g, false));
             first = false;
@@ -1553,6 +1570,39 @@ public final class Run {
      * put the rest back). Each pour is checked against the client view; {@code verifyAfter} adds a server check
      * before the chest closes when the visit has none of its own.
      */
+    /**
+     * On a chest's last visit: asks Inventory Bogosorter (if installed and bogoSortChests is on) to order the chest's
+     * slots by the player's Bogosorter rules, then waits settleTicks for the server's result. The VerifyVisit that
+     * follows checks the chest and inventory still hold exactly what they did.
+     */
+    private final class BogoSortStep extends Step {
+
+        final int id;
+        int wait = -1;
+
+        BogoSortStep(String g, int id) {
+            super(g, false);
+            this.id = id;
+        }
+
+        String describe() {
+            return "sort chest #" + id + " with Inventory Bogosorter";
+        }
+
+        Outcome tick() {
+            if (!Config.bogoSortChests || mode == Mode.PLAN_ONLY || !BogoSort.available()) return Outcome.DONE;
+            if (wait < 0) {
+                if (!requireOpen(id)) return Outcome.FAILED;
+                if (mc.thePlayer.inventory.getItemStack() != null) return Outcome.DONE; // never with a held stack
+                if (!BogoSort.sortOpen(mc.thePlayer.openContainer)) return Outcome.DONE;
+                trace.step("Sorted chest #" + id + " with Inventory Bogosorter");
+                wait = Math.max(1, Config.settleTicks);
+                return Outcome.RUNNING;
+            }
+            return --wait > 0 ? Outcome.RUNNING : Outcome.DONE;
+        }
+    }
+
     private final class CombineStep extends Step {
 
         final int id;

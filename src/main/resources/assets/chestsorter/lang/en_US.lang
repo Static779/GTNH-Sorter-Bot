@@ -30,3 +30,4 @@ chestsorter.cfg.combineStacks=Combine partial stacks
 chestsorter.cfg.holoRead=Servers: read chests by looking (HoloInventory)
 chestsorter.cfg.keepFreePercent=Keep free for new items (%)
 chestsorter.cfg.extraChests=Compare with extra chests (plan only)
+chestsorter.cfg.bogoSortChests=Sort inside each chest (Inventory Bogosorter)
