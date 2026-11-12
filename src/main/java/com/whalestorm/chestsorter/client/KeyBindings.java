@@ -20,10 +20,17 @@ public final class KeyBindings {
         Keyboard.KEY_NONE,
         "key.categories.chestsorter");
 
+    /** Cycles the looked-at chest: input, output, unmarked. Unbound by default. */
+    public static final KeyBinding MARK = new KeyBinding(
+        "key.chestsorter.mark",
+        Keyboard.KEY_NONE,
+        "key.categories.chestsorter");
+
     private KeyBindings() {}
 
     public static void register() {
         ClientRegistry.registerKeyBinding(TOGGLE);
         ClientRegistry.registerKeyBinding(SETTINGS);
+        ClientRegistry.registerKeyBinding(MARK);
     }
 }

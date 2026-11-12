@@ -14,7 +14,7 @@ import com.whalestorm.chestsorter.core.WhatIf;
 public final class SorterCommand extends CommandBase {
 
     private static final List<String> SUBS = Arrays
-        .asList("run", "plan", "whatif", "stop", "status", "scan", "item", "config", "verbose", "help");
+        .asList("run", "plan", "whatif", "mark", "migrate", "stop", "status", "scan", "item", "config", "verbose", "help");
 
     @Override
     public String getCommandName() {
@@ -29,7 +29,7 @@ public final class SorterCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/chestsorter <run|plan|whatif|stop|status|scan|item|config|verbose|help>";
+        return "/chestsorter <run|plan|whatif|mark|migrate|stop|status|scan|item|config|verbose|help>";
     }
 
     @Override
@@ -45,7 +45,16 @@ public final class SorterCommand extends CommandBase {
     @Override
     @SuppressWarnings("rawtypes")
     public List addTabCompletionOptions(ICommandSender sender, String[] args) {
-        return args.length == 1 ? getListOfStringsFromIterableMatchingLastWord(args, SUBS) : null;
+        if (args.length == 1) return getListOfStringsFromIterableMatchingLastWord(args, SUBS);
+        if (args.length == 2 && args[0].equalsIgnoreCase("mark")) {
+            return getListOfStringsFromIterableMatchingLastWord(
+                args,
+                Arrays.asList("input", "output", "clear", "list", "clearall"));
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("migrate")) {
+            return getListOfStringsFromIterableMatchingLastWord(args, Arrays.asList("plan"));
+        }
+        return null;
     }
 
     @Override
@@ -58,6 +67,48 @@ public final class SorterCommand extends CommandBase {
                 break;
             case "plan":
                 c.startWhenScreenCloses(Run.Mode.PLAN_ONLY);
+                break;
+            case "mark": {
+                String what = args.length > 1 ? args[1].toLowerCase(java.util.Locale.ROOT) : "";
+                int radius = 0;
+                if (args.length > 2) {
+                    try {
+                        radius = Integer.parseInt(args[2]);
+                    } catch (NumberFormatException e) {
+                        radius = -1;
+                    }
+                    if (radius < 1 || radius > 64) {
+                        Trace.chat("Radius must be 1 to 64 blocks, e.g. /cs mark input 6");
+                        break;
+                    }
+                }
+                switch (what) {
+                    case "input":
+                        c.mark(Marks.Kind.INPUT, radius);
+                        break;
+                    case "output":
+                        c.mark(Marks.Kind.OUTPUT, radius);
+                        break;
+                    case "clear":
+                        c.mark(null, radius);
+                        break;
+                    case "list":
+                        c.listMarks();
+                        break;
+                    case "clearall":
+                        c.clearMarks();
+                        break;
+                    default:
+                        Trace.chat(
+                            "/cs mark input|output|clear [radius] (the chest you look at, or all within radius), "
+                                + "/cs mark list, /cs mark clearall");
+                }
+                break;
+            }
+            case "migrate":
+                c.startWhenScreenCloses(
+                    args.length > 1 && args[1].equalsIgnoreCase("plan") ? Run.Mode.PLAN_ONLY : Run.Mode.FULL,
+                    true);
                 break;
             case "whatif":
                 if (args.length > 1) {
@@ -108,6 +159,8 @@ public final class SorterCommand extends CommandBase {
         Trace.chat("Commands (/cs works too):");
         Trace.chat(g + "/chestsorter run  - sort nearby chests (same as the key)");
         Trace.chat(g + "/chestsorter plan - survey and show the plan, move nothing");
+        Trace.chat(g + "/chestsorter mark input|output|clear [radius] - mark chests for moving storage (list, clearall)");
+        Trace.chat(g + "/chestsorter migrate [plan] - move everything from input chests into output chests, sorted");
         Trace.chat(g + "/chestsorter whatif [n ...] - plan only, and show what n extra chests would change");
         Trace.chat(g + "/chestsorter stop - stop now; carried items stay in your inventory");
         Trace.chat(g + "/chestsorter status - what it is doing");

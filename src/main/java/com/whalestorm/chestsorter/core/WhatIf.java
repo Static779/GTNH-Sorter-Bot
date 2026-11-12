@@ -35,8 +35,16 @@ public final class WhatIf {
         public final int carry, minSplit, maxTrips;
         public final double layoutWeight, keepFree;
         public final Taxonomy tax;
+        /** Input chests (give only) when moving storage; extra chests are added next to the others. */
+        public final Set<Integer> sources;
 
         public Settings(int carry, double layoutWeight, int minSplit, double keepFree, Taxonomy tax, int maxTrips) {
+            this(carry, layoutWeight, minSplit, keepFree, tax, maxTrips, new HashSet<Integer>());
+        }
+
+        public Settings(int carry, double layoutWeight, int minSplit, double keepFree, Taxonomy tax, int maxTrips,
+            Set<Integer> sources) {
+            this.sources = sources;
             this.carry = carry;
             this.layoutWeight = layoutWeight;
             this.minSplit = minSplit;
@@ -125,7 +133,9 @@ public final class WhatIf {
         int extra) {
         List<ChestModel> room = new ArrayList<>();
         for (ChestModel c : chests) room.add(c.copy());
-        room.addAll(extraChests(chests, extra));
+        List<ChestModel> receivers = new ArrayList<>();
+        for (ChestModel c : chests) if (!s.sources.contains(c.id)) receivers.add(c);
+        room.addAll(extraChests(receivers.isEmpty() ? chests : receivers, extra, chests));
         Assigner.Result a = Assigner.assign(
             room,
             items,
@@ -133,14 +143,21 @@ public final class WhatIf {
             new Assigner.Weights(1.0, s.layoutWeight),
             s.tax,
             s.minSplit,
-            s.keepFree);
+            s.keepFree,
+            s.sources);
         Plan plan = Planner.plan(room, items, a, s.carry, s.maxTrips, start);
-        return measure(room, items, a, plan, start, extra);
+        return measure(room, items, a, plan, start, extra, s.sources);
     }
 
     /** Measures a finished plan ({@code room} as it was before the plan). */
     public static Row measure(List<ChestModel> room, Map<Integer, ItemInfo> items, Assigner.Result a, Plan plan,
         BlockPos start, int extra) {
+        return measure(room, items, a, plan, start, extra, new HashSet<Integer>());
+    }
+
+    /** As above; input chests ({@code sources}) count toward stacks left over but not toward free slots or chests. */
+    public static Row measure(List<ChestModel> room, Map<Integer, ItemInfo> items, Assigner.Result a, Plan plan,
+        BlockPos start, int extra, Set<Integer> sources) {
         int after = 0, misc = 0, unassigned = 0, free = 0, catChests = 0;
         double catSum = 0;
         Map<String, int[]> perGroup = new TreeMap<>(); // group -> {slots, used}
@@ -160,6 +177,7 @@ public final class WhatIf {
                 if (Taxonomy.MISC.equals(a.effective(cat))) misc++;
                 if (a.unassigned.contains(cat)) unassigned++;
             }
+            if (sources.contains(c.id)) continue;
             free += c.size() - used;
             if (!cats.isEmpty()) {
                 catSum += cats.size();
@@ -192,7 +210,7 @@ public final class WhatIf {
         }
         return new Row(
             extra,
-            room.size(),
+            room.size() - sources.size(),
             a.chestCategory.size(),
             perGroup.size(),
             plan.stacksLeftNoRoom + unassigned,
@@ -211,6 +229,11 @@ public final class WhatIf {
      * (or already added) chest that is nearest the middle of the room. Ties go to the lowest x, then y, then z.
      */
     public static List<ChestModel> extraChests(List<ChestModel> chests, int n) {
+        return extraChests(chests, n, chests);
+    }
+
+    /** As above, around {@code chests}, but never on a spot any chest in {@code all} takes. */
+    public static List<ChestModel> extraChests(List<ChestModel> chests, int n, List<ChestModel> all) {
         List<ChestModel> out = new ArrayList<>();
         if (chests.isEmpty() || n <= 0) return out;
         Map<Long, Integer> sizes = new TreeMap<>();
@@ -225,6 +248,8 @@ public final class WhatIf {
             maxY = Math.max(maxY, c.pos.y);
             taken.add(c.pos);
         }
+        List<BlockPos> anchors = new ArrayList<>(taken);
+        for (ChestModel c : all) taken.add(c.pos);
         cx /= chests.size();
         cy /= chests.size();
         cz /= chests.size();
@@ -237,7 +262,6 @@ public final class WhatIf {
             }
         }
         int size = (int) (common >> 20), limit = (int) (common & 0xFFFFF);
-        List<BlockPos> anchors = new ArrayList<>(taken);
         int[][] offsets = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 0, 1 }, { 0, 0, -1 }, { 0, 1, 0 } };
         for (int k = 0; k < n; k++) {
             BlockPos pick = null;

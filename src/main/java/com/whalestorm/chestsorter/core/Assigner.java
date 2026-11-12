@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -111,7 +112,16 @@ public final class Assigner {
      */
     public static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
         Weights w) {
-        return assign(chests, items, locked, w, new HashMap<String, String>(), Relations::score, null, 0);
+        return assign(
+            chests,
+            items,
+            locked,
+            w,
+            new HashMap<String, String>(),
+            Relations::score,
+            null,
+            0,
+            Collections.<Integer>emptySet());
     }
 
     /**
@@ -129,18 +139,30 @@ public final class Assigner {
      */
     public static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
         Weights w, Taxonomy tax, int minSplitStacks, double keepFree) {
+        return assign(chests, items, locked, w, tax, minSplitStacks, keepFree, Collections.<Integer>emptySet());
+    }
+
+    /**
+     * @param sources chest ids that only give (input chests when moving storage): they get no category, so everything
+     *                in them is moved out, and buckets are sized to the other chests only
+     */
+    public static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
+        Weights w, Taxonomy tax, int minSplitStacks, double keepFree, Set<Integer> sources) {
         Map<String, Integer> fine = demand(chests, items, new HashMap<String, String>());
-        int slots = 0;
-        for (ChestModel m : chests) slots += m.size();
-        double avg = (chests.isEmpty() ? 27 : (double) slots / chests.size())
-            * (1 - Math.max(0, Math.min(0.9, keepFree)));
-        Taxonomy.Buckets bk = tax.bucket(fine, chests.size() - locked.size(), avg, minSplitStacks);
+        int slots = 0, receivers = 0;
+        for (ChestModel m : chests) {
+            if (sources.contains(m.id)) continue;
+            slots += m.size();
+            receivers++;
+        }
+        double avg = (receivers == 0 ? 27 : (double) slots / receivers) * (1 - Math.max(0, Math.min(0.9, keepFree)));
+        Taxonomy.Buckets bk = tax.bucket(fine, Math.max(0, receivers - locked.size()), avg, minSplitStacks);
         Map<String, String> pre = new TreeMap<>();
         for (Map.Entry<String, String> e : bk.bucketOf.entrySet()) {
             if (!e.getKey()
                 .equals(e.getValue())) pre.put(e.getKey(), e.getValue());
         }
-        return assign(chests, items, locked, w, pre, tax::relation, bk, keepFree);
+        return assign(chests, items, locked, w, pre, tax::relation, bk, keepFree, sources);
     }
 
     /** Stacks per category (after {@code pre}), packing each item's stacks full. */
@@ -156,7 +178,8 @@ public final class Assigner {
     }
 
     private static Result assign(List<ChestModel> chests, Map<Integer, ItemInfo> items, Map<Integer, String> locked,
-        Weights w, Map<String, String> pre, Relatedness relation, Taxonomy.Buckets bk, double keepFree) {
+        Weights w, Map<String, String> pre, Relatedness relation, Taxonomy.Buckets bk, double keepFree,
+        Set<Integer> sources) {
         // ---- 1. demand per category, in slots, after packing stacks of each item full ----
         Map<String, Integer> demand = demand(chests, items, pre);
         for (String forced : locked.values()) demand.putIfAbsent(forced, 0);
@@ -165,7 +188,9 @@ public final class Assigner {
         Map<String, String> merged = new TreeMap<>(pre);
         List<String> unassigned = new ArrayList<>();
         Map<String, Integer> active = new TreeMap<>(demand);
-        while (active.size() > chests.size()) {
+        int receivers = 0;
+        for (ChestModel m : chests) if (!sources.contains(m.id)) receivers++;
+        while (active.size() > receivers) {
             String small = null;
             for (Map.Entry<String, Integer> e : active.entrySet()) {
                 if (locked.containsValue(e.getKey())) continue;
@@ -243,6 +268,10 @@ public final class Assigner {
             start[c] = best;
             if (locked.containsKey(m.id)) {
                 start[c] = catIndex.get(locked.get(m.id));
+                fixed[c] = true;
+            }
+            if (sources.contains(m.id)) {
+                start[c] = k; // gives only: never a category
                 fixed[c] = true;
             }
         }

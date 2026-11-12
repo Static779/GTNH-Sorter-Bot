@@ -41,6 +41,12 @@ public class Config {
     public static String[] groups = Taxonomy.DEFAULT_GROUPS.clone();
     /** After the run is done with a chest, have Inventory Bogosorter order its slots (when installed). */
     public static boolean bogoSortChests = true;
+    /** Moving storage: how far from you marked chests are looked for (blocks; loaded chunks only). */
+    public static int migrateRadius = 64;
+    /** Outline marked input (orange) and output (green) chests. */
+    public static boolean showMarks = true;
+    /** Write a Logistics Pipes sink setup for the sorted chests after planning (chestsorter/lp-setup.txt). */
+    public static boolean lpSetup = true;
     /** Extra chest counts compared by /cs plan and /cs whatif, e.g. "6, 12, 24"; empty = no comparison. */
     public static String extraChests = "6, 12, 24";
 
@@ -176,6 +182,28 @@ public class Config {
             "With Inventory Bogosorter installed (GTNH has it): after the run is done with a chest, order its slots "
                 + "with your Bogosorter sort rules. Checked like every other step; does nothing without Bogosorter.",
             LANG + "bogoSortChests");
+        migrateRadius = c.getInt(
+            "migrateRadius",
+            CAT_SORT,
+            64,
+            8,
+            160,
+            "Moving storage (/cs migrate): marked chests up to this many blocks away are used. They must be in loaded "
+                + "chunks; the walk between input and output chests can be long.",
+            LANG + "migrateRadius");
+        showMarks = c.getBoolean(
+            "showMarks",
+            CAT_SORT,
+            true,
+            "Outline chests marked for moving storage: orange = input, green = output (seen through walls).",
+            LANG + "showMarks");
+        lpSetup = c.getBoolean(
+            "lpSetup",
+            CAT_SORT,
+            true,
+            "After planning, write which Logistics Pipes sink modules would keep each sorted chest's group going to it "
+                + "(.minecraft/chestsorter/lp-setup.txt).",
+            LANG + "lpSetup");
         Property x = c.get(
             CAT_SORT,
             "extraChests",
@@ -215,6 +243,9 @@ public class Config {
                 "holoRead",
                 "combineStacks",
                 "bogoSortChests",
+                "migrateRadius",
+                "showMarks",
+                "lpSetup",
                 "minStacksForOwnChest",
                 "keepFreePercent",
                 "layoutWeight",

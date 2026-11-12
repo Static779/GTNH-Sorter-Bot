@@ -4,6 +4,14 @@ Client-side mod. Press one key and it reads every vanilla chest and Iron Chest n
 
 **Reading chests:** in singleplayer (or when you host LAN) it reads every chest straight from your world in one tick, without walking or opening anything. On servers with HoloInventory (GTNH has it) it walks within reach and looks at each chest; HoloInventory's server sends the contents, no glasses needed. Anything it can't read that way, it opens.
 
+## Moving storage: input chests → output chests
+
+Mark the chests to empty as **input** and the chests to fill as **output**, then run `/cs migrate`. Everything in the input chests goes into the output chests, sorted by group the same way a normal sort works (groups sized to the output chests, related groups next to each other, 15% kept free to grow). Unmarked chests are never touched. Input chests never receive anything.
+
+- **Marking**: bind "Mark chest" in Controls; looking at a chest it cycles input → output → unmarked. Or `/cs mark input|output|clear` for the chest you look at, `/cs mark input 6` for every chest within 6 blocks, `/cs mark list`, `/cs mark clearall`. Marked chests get an outline (orange input, green output; `showMarks`). Marks are saved per world (singleplayer save or server address) and dimension in `.minecraft/chestsorter/marks.txt`.
+- **Run**: `/cs migrate plan` first (moves nothing; shows the plan, what stays in the inputs if the outputs are too small, and the extra-chest comparison placed next to your outputs), then `/cs migrate`. Marked chests up to `migrateRadius` (64) blocks away are used; they must be in loaded chunks.
+- **Logistics Pipes**: every plan (this and normal sorts) writes `.minecraft/chestsorter/lp-setup.txt` (`lpSetup`): for each sorted chest, the sinks that would keep its group going to it. GT prefix groups → a Type Filter ItemSink (put in the listed sample item per prefix), other ore names → OreDict ItemSink, mod groups → ModBased / CreativeTab ItemSink, misc → Default Route; anything it can't express is listed for a Polymorphic ItemSink. Checked against the Logistics Pipes source GTNH 2.9.0-RC-2 ships (1.5.36-GTNH); not tested in game.
+
 ## Use
 1. Put `chestsorter-<version>.jar` (not `-dev` or `-sources`) in your GTNH instance's `mods` folder (`<instance>\.minecraft\mods` in Prism).
 2. Options → Controls → Chest Sorter → bind **Start / stop sorting** (unbound by default).
@@ -16,6 +24,8 @@ Try `/chestsorter plan` first: it opens and reads every chest and prints the pla
 |---|---|
 | `/chestsorter run` | Full sort (same as the key) |
 | `/chestsorter plan` | Survey and print the plan; moves nothing |
+| `/chestsorter mark input\|output\|clear [radius]` | Mark the chest you look at (or all within radius) for moving storage; `list`, `clearall` |
+| `/chestsorter migrate [plan]` | Move everything from input chests into output chests, sorted |
 | `/chestsorter whatif [n ...]` | Same as plan, plus what n more chests would change (default 6, 12, 24; the numbers are saved) |
 | `/chestsorter stop` | Stop now |
 | `/chestsorter status` | What it is doing |

@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeSet;
 import java.util.Set;
 
 import com.whalestorm.chestsorter.core.Assigner;
@@ -16,6 +17,7 @@ import com.whalestorm.chestsorter.core.ChestModel;
 import com.whalestorm.chestsorter.core.ChestPairing;
 import com.whalestorm.chestsorter.core.Combiner;
 import com.whalestorm.chestsorter.core.ItemInfo;
+import com.whalestorm.chestsorter.core.LpSetup;
 import com.whalestorm.chestsorter.core.PathFinder;
 import com.whalestorm.chestsorter.core.Plan;
 import com.whalestorm.chestsorter.core.PlanChecker;
@@ -74,6 +76,9 @@ public class CoreTests {
         tax = null;
         checkerCatchesBadPlans();
         whatIfBasics();
+        migrateEmptiesInputsIntoOutputs();
+        migrateNeverFillsInputs();
+        lpSetupMapsGroupsToSinks();
         whatIfMoreChestsHelpFullRooms();
         // pathfinder
         pathFlat();
@@ -616,6 +621,120 @@ public class CoreTests {
         check("whatif: verdict", !WhatIf.verdict(rows).isEmpty());
         check("whatif: line", rows.get(1).line().startsWith("+2: "));
         check("whatif: free slots grow with chests", rows.get(2).freeSlots > rows.get(0).freeSlots);
+    }
+
+    /** Input chests give everything to the output chests, sorted by group; inputs never get a group. */
+    static void migrateEmptiesInputsIntoOutputs() {
+        Random rnd = new Random(5);
+        String[] cats = { "ingot", "dust", "plate", "gem", "ore", "mod:minecraft", "misc" };
+        Map<Integer, ItemInfo> it = new HashMap<>();
+        for (int k = 0; k < 30; k++) it.put(k, new ItemInfo(k, "i" + k, cats[k % cats.length], 64));
+        List<ChestModel> cs = new ArrayList<>();
+        Set<Integer> inputs = new TreeSet<>();
+        for (int i = 0; i < 4; i++) { // inputs: 4 full-ish mixed chests at x = 0..6
+            ChestModel c = new ChestModel(i, new BlockPos(i * 2, 64, 0), "in", 27, 64);
+            for (int sl = 0; sl < 27; sl++) if (rnd.nextDouble() < 0.8) c.set(sl, rnd.nextInt(30), 1 + rnd.nextInt(64));
+            cs.add(c);
+            inputs.add(i);
+        }
+        for (int i = 4; i < 12; i++) cs.add(new ChestModel(i, new BlockPos(20 + i, 64, 6), "out", 27, 64));
+        Assigner.Result a = Assigner.assign(
+            cs,
+            it,
+            new HashMap<Integer, String>(),
+            new Assigner.Weights(1.0, 2.0),
+            Taxonomy.defaults(),
+            6,
+            0.15,
+            inputs);
+        boolean noInputGroup = true;
+        for (int i : inputs) noInputGroup &= !a.chestCategory.containsKey(i);
+        check("migrate: input chests get no group", noInputGroup);
+        check("migrate: every one of the 7 groups has an output chest (" + a.chestCategory.size() + ")",
+            a.chestCategory.size() >= 7 && a.unassigned.isEmpty());
+        Plan p = Planner.plan(cs, it, a, 20, 1000, new BlockPos(0, 64, 0));
+        List<String> problems = PlanChecker.check(cs, p, it, 20);
+        check("migrate: plan passes the checker " + problems, problems.isEmpty());
+        boolean emptied = true;
+        for (int i : inputs) emptied &= p.expected.get(i)
+            .isEmpty();
+        check("migrate: inputs end empty", emptied);
+        boolean pure = true;
+        for (int i = 4; i < 12; i++) {
+            ChestModel e = p.expected.get(i);
+            for (int sl = 0; sl < e.size(); sl++) {
+                if (e.keys[sl] == ChestModel.EMPTY) continue;
+                pure &= a.effective(it.get(e.keys[sl]).category)
+                    .equals(a.chestCategory.get(i));
+            }
+        }
+        check("migrate: each output holds only its group", pure);
+        WhatIf.Settings st = new WhatIf.Settings(20, 2.0, 6, 0.15, Taxonomy.defaults(), 1000, inputs);
+        WhatIf.Row r0 = WhatIf.measure(cs, it, a, p, new BlockPos(0, 64, 0), 0, inputs);
+        eq(8, r0.chests);
+        eq(0, r0.leftOver);
+        List<ChestModel> outs = cs.subList(4, 12);
+        boolean nearOutputs = true;
+        for (ChestModel e : WhatIf.extraChests(outs, 6, cs)) nearOutputs &= e.pos.z >= 5;
+        check("migrate: extra chests go beside the outputs", nearOutputs);
+        WhatIf.Row r6 = WhatIf.measure(cs, it, st, new BlockPos(0, 64, 0), 6);
+        eq(14, r6.chests);
+    }
+
+    /** Outputs too small: the rest stays in the inputs, never goes into another input, plan still checks. */
+    static void migrateNeverFillsInputs() {
+        Map<Integer, ItemInfo> it = items("ingot", "dust", "plate");
+        List<ChestModel> cs = Arrays.asList(
+            chest(0, 9, 0, 64, 1, 64, 2, 64, 0, 64, 1, 64, 2, 64, 0, 64, 1, 64, 2, 64),
+            chest(1, 9),
+            chest(2, 3),
+            chest(3, 3));
+        Set<Integer> inputs = new TreeSet<>(Arrays.asList(0, 1));
+        Assigner.Result a = Assigner.assign(
+            cs,
+            it,
+            new HashMap<Integer, String>(),
+            Assigner.Weights.DEFAULT,
+            Taxonomy.defaults(),
+            1,
+            0,
+            inputs);
+        Plan p = Planner.plan(cs, it, a, 9, 100, new BlockPos(0, 64, 0));
+        check("migrate small: plan passes " + PlanChecker.check(cs, p, it, 9), PlanChecker.check(cs, p, it, 9)
+            .isEmpty());
+        check("migrate small: empty input stays empty", p.expected.get(1)
+            .isEmpty());
+        int left = 0;
+        for (int k : p.expected.get(0).keys) if (k != ChestModel.EMPTY) left++;
+        check("migrate small: 6 slots of output room, 3 stacks left (" + left + ")", left == 3);
+    }
+
+    static void lpSetupMapsGroupsToSinks() {
+        Map<Integer, ItemInfo> it = new HashMap<>();
+        it.put(0, new ItemInfo(0, "Copper Ingot", "ingot", 64, "gregtech", "GregTech.Materials", Arrays.asList("ingotCopper")));
+        it.put(1, new ItemInfo(1, "Iron Plate", "plate", 64, "gregtech", "GregTech.Materials", Arrays.asList("plateIron")));
+        it.put(2, new ItemInfo(2, "Amber", "amberStuff", 64, "Thaumcraft", "thaumcraft", Arrays.asList("amberStuffBig")));
+        it.put(3, new ItemInfo(3, "Piston", "mod:minecraft:redstone", 64, "minecraft", "redstone", null));
+        it.put(4, new ItemInfo(4, "Thing", "misc", 64, null, null, null));
+        List<ChestModel> cs = Arrays.asList(
+            chest(0, 27, 0, 64),
+            chest(1, 27, 1, 64),
+            chest(2, 27, 2, 64),
+            chest(3, 27, 3, 64),
+            chest(4, 27, 4, 64));
+        Assigner.Result a = Assigner.assign(cs, it);
+        List<LpSetup.ChestSetup> st = LpSetup.build(cs, it.values(), a, Arrays.asList("ingot", "plate", "dust"));
+        eq(5, st.size());
+        Map<String, LpSetup.ChestSetup> byGroup = new HashMap<>();
+        for (LpSetup.ChestSetup x : st) byGroup.put(x.group, x);
+        LpSetup.ChestSetup ingot = byGroup.get(a.chestCategory.get(0));
+        check("lp: ingot chest uses a type filter for ingot", ingot.typeFilter.containsKey("ingot"));
+        eq("Copper Ingot", ingot.typeFilter.get("ingot"));
+        check("lp: non-GT prefix uses exact ore names", byGroup.get(a.chestCategory.get(2)).oreDict.contains("amberStuffBig"));
+        check("lp: creative-tab category uses the tab as spelled", byGroup.get(a.chestCategory.get(3)).tabs.contains("redstone"));
+        check("lp: misc chest is the default route", byGroup.get(a.chestCategory.get(4)).defaultRoute);
+        check("lp: text has a header and a line per chest", LpSetup.text(st)
+            .size() > 5 + 5);
     }
 
     /** Over many crowded rooms, more chests leave fewer stacks over and fewer nearly full groups. */

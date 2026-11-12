@@ -25,6 +25,7 @@ import com.whalestorm.chestsorter.core.ChestModel;
 import com.whalestorm.chestsorter.core.Combiner;
 import com.whalestorm.chestsorter.core.Container;
 import com.whalestorm.chestsorter.core.ItemInfo;
+import com.whalestorm.chestsorter.core.LpSetup;
 import com.whalestorm.chestsorter.core.Plan;
 import com.whalestorm.chestsorter.core.PlanChecker;
 import com.whalestorm.chestsorter.core.Planner;
@@ -107,6 +108,9 @@ public final class Run {
 
     private final Minecraft mc = Minecraft.getMinecraft();
     private final Mode mode;
+    private final boolean migrate;
+    /** Moving storage: ids of the input chests (give only). Empty otherwise. */
+    private final Set<Integer> sources = new TreeSet<>();
     private final Trace trace;
     private final Safety safety = new Safety();
     private final AutoInput input = new AutoInput();
@@ -153,6 +157,12 @@ public final class Run {
     private Set<Integer> carriedAtOpen;
 
     public Run(Mode mode, Trace trace) {
+        this(mode, trace, false);
+    }
+
+    /** {@code migrate}: only the marked chests; everything in the input chests goes into the output chests. */
+    public Run(Mode mode, Trace trace, boolean migrate) {
+        this.migrate = migrate;
         this.mode = mode;
         this.trace = trace;
         this.walker = new Walker(input, trace);
@@ -212,8 +222,15 @@ public final class Run {
         input.install(p);
         trace.log("Start " + mode + " at " + Walker.feet(p) + ", carry slots " + carrySlots);
 
-        containers = ContainerScanner.scan(mc.theWorld, p, Config.scanRadius);
-        trace.info("Found " + containers.size() + " containers within " + Config.scanRadius + " blocks.");
+        if (migrate) {
+            if (!findMarked(p)) {
+                finish();
+                return false;
+            }
+        } else {
+            containers = ContainerScanner.scan(mc.theWorld, p, Config.scanRadius);
+            trace.info("Found " + containers.size() + " containers within " + Config.scanRadius + " blocks.");
+        }
         for (int i = 0; i < containers.size(); i++) trace.log("  #" + i + " " + containers.get(i));
         if (containers.isEmpty()) {
             finishOk("Nothing to sort.");
@@ -234,6 +251,67 @@ public final class Run {
                 "Survey: opening each chest (not singleplayer"
                     + (Config.holoRead ? ", HoloInventory not loaded)" : ", holoRead is off)"));
             queueOpenSurvey(nearestFirstOrder(Walker.feet(p)));
+        }
+        return true;
+    }
+
+    /**
+     * Moving storage: keeps only the marked chests (input or output), numbered nearest first, and records which are
+     * inputs. Unmarked chests are never touched. Fails (with a message) without at least one of each.
+     */
+    private boolean findMarked(EntityClientPlayerMP p) {
+        String world = Marks.worldKey();
+        if (world == null) {
+            trace.error("Not starting: can't tell which world this is, so there are no marks.");
+            return false;
+        }
+        int dim = p.dimension;
+        Map<BlockPos, Marks.Kind> marked = Marks.INSTANCE.here(world, dim);
+        if (marked.isEmpty()) {
+            trace.error("Not starting: no marked chests. Mark input and output chests first (/cs mark, or the mark key).");
+            return false;
+        }
+        List<Container> found = new ArrayList<>();
+        Set<BlockPos> seen = new java.util.HashSet<>();
+        List<Marks.Kind> kinds = new ArrayList<>();
+        int conflicts = 0;
+        for (Container c : ContainerScanner.scan(mc.theWorld, p, Config.migrateRadius)) {
+            boolean[] conflict = new boolean[1];
+            Marks.Kind k = Marks.INSTANCE.kindOf(world, dim, c, conflict);
+            if (k == null) continue;
+            seen.addAll(Marks.blocksOf(c));
+            if (conflict[0]) {
+                conflicts++;
+                trace.warn(c + ": its two halves are marked differently; skipping it. Mark it again.");
+                continue;
+            }
+            found.add(c);
+            kinds.add(k);
+        }
+        int missing = 0;
+        for (BlockPos b : marked.keySet()) if (!seen.contains(b)) missing++;
+        if (missing > 0) {
+            trace.warn(
+                missing + " marked blocks have no chest within " + Config.migrateRadius
+                    + " blocks (broken, too far, or not loaded); ignored.");
+        }
+        containers = found;
+        sources.clear();
+        int in = 0, out = 0;
+        for (int i = 0; i < found.size(); i++) {
+            if (kinds.get(i) == Marks.Kind.INPUT) {
+                sources.add(i);
+                in++;
+            } else out++;
+        }
+        trace.info("Moving storage: " + in + " input chests -> " + out + " output chests.");
+        for (int i = 0; i < containers.size(); i++) {
+            trace.log("  #" + i + " " + (sources.contains(i) ? "INPUT " : "OUTPUT ") + containers.get(i));
+        }
+        if (in == 0 || out == 0) {
+            trace.error(
+                "Not starting: need at least one input and one output chest" + (conflicts > 0 ? " (see above)." : "."));
+            return false;
         }
         return true;
     }
@@ -614,6 +692,53 @@ public final class Run {
     /** chest id -> {trip number, visit index} of its last visit in the plan: where Bogosorter sorts it. */
     private final Map<Integer, int[]> lastVisit = new HashMap<>();
 
+    /** Moving storage: what the input chests will still hold after the plan, and why. */
+    private void migrateReport(List<ChestModel> chests) {
+        int stacks = 0, chestsLeft = 0;
+        for (int id : sources) {
+            ChestModel end = plan.expected.get(id);
+            if (end == null) continue;
+            int n = 0;
+            for (int k : end.keys) if (k != ChestModel.EMPTY) n++;
+            stacks += n;
+            if (n > 0) chestsLeft++;
+        }
+        int outSlots = 0;
+        for (ChestModel c : chests) if (!sources.contains(c.id)) outSlots += c.size();
+        if (stacks == 0) {
+            trace.info("All input chests will be empty afterwards.");
+        } else {
+            trace.warn(
+                stacks + " stacks will stay in "
+                    + chestsLeft
+                    + " input chests (output chests full, "
+                    + outSlots
+                    + " slots in all). Mark more output chests, or /cs migrate plan to compare extra chests.");
+        }
+    }
+
+    /** Writes the Logistics Pipes sink setup for the sorted chests to .minecraft/chestsorter/lp-setup.txt. */
+    private void writeLpSetup(List<ChestModel> chests, Map<Integer, ItemInfo> items, Assigner.Result a) {
+        try {
+            List<ChestModel> receivers = new ArrayList<>();
+            for (ChestModel c : chests) if (!sources.contains(c.id)) receivers.add(c);
+            List<LpSetup.ChestSetup> setups = LpSetup.build(receivers, items.values(), a, ItemKeys.gtPrefixes());
+            java.io.File dir = new java.io.File(mc.mcDataDir, "chestsorter");
+            if (!dir.isDirectory() && !dir.mkdirs()) throw new java.io.IOException("cannot create " + dir);
+            java.io.File f = new java.io.File(dir, "lp-setup.txt");
+            try (java.io.PrintWriter w = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(
+                    new java.io.FileOutputStream(f),
+                    java.nio.charset.StandardCharsets.UTF_8))) {
+                for (String line : LpSetup.text(setups)) w.println(line);
+            }
+            trace.info("Logistics Pipes setup for " + setups.size() + " chests: chestsorter/lp-setup.txt");
+            for (LpSetup.ChestSetup st : setups) for (String line : st.lines()) trace.log("  " + line);
+        } catch (Throwable e) {
+            trace.warn("Could not write the Logistics Pipes setup: " + e);
+        }
+    }
+
     /** Extra-chest comparison from the planning thread (plan-only runs), printed at the end of the plan. */
     private List<WhatIf.Row> whatIf;
     private long whatIfMs;
@@ -658,6 +783,7 @@ public final class Run {
         final Planned out = new Planned();
         final int combines = toCombine;
         final int[] extras = mode == Mode.PLAN_ONLY ? WhatIf.parse(Config.extraChests, 4, 500) : new int[0];
+        final Set<Integer> src = new TreeSet<>(sources);
         Thread t = new Thread(() -> {
             long t0 = System.nanoTime();
             try {
@@ -668,14 +794,15 @@ public final class Run {
                     new Assigner.Weights(1.0, layout),
                     tax,
                     minSplit,
-                    keepFree);
+                    keepFree,
+                    src);
                 out.plan = Planner.plan(chests, items, out.a, carry, maxTrips, here);
                 out.problems = PlanChecker.check(chests, out.plan, items, carry);
                 if (extras.length > 0) {
                     long w0 = System.nanoTime();
-                    WhatIf.Settings ws = new WhatIf.Settings(carry, layout, minSplit, keepFree, tax, maxTrips);
+                    WhatIf.Settings ws = new WhatIf.Settings(carry, layout, minSplit, keepFree, tax, maxTrips, src);
                     List<WhatIf.Row> rows = new ArrayList<>();
-                    rows.add(WhatIf.measure(chests, items, out.a, out.plan, here, 0));
+                    rows.add(WhatIf.measure(chests, items, out.a, out.plan, here, 0, src));
                     for (int n : extras) rows.add(WhatIf.measure(chests, items, ws, here, n));
                     out.whatIf = rows;
                     out.whatIfMs = (System.nanoTime() - w0) / 1000000;
@@ -775,6 +902,8 @@ public final class Run {
         if (plan.stacksLeftNoRoom > 0) {
             trace.warn(plan.stacksLeftNoRoom + " stacks stay where they are: their category's chests are full.");
         }
+        if (migrate) migrateReport(chests);
+        if (Config.lpSetup) writeLpSetup(chests, items, a);
         trace.info("Route: " + plan.trips.size() + " trips, " + plan.visits() + " chest visits.");
         int t = 0;
         for (Plan.Trip trip : plan.trips) {

@@ -85,7 +85,10 @@ public final class ItemKeys {
                 key,
                 label(stack),
                 categorizer.categorize(names, modIdOf(stack), tabOf(stack)),
-                stack.getMaxStackSize()));
+                stack.getMaxStackSize(),
+                modIdOf(stack),
+                tabOf(stack),
+                names));
         return key;
     }
 

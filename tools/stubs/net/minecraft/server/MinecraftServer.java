@@ -1,2 +1,2 @@
 package net.minecraft.server;
-public abstract class MinecraftServer { public static MinecraftServer getServer(){return null;} public net.minecraft.world.WorldServer worldServerForDimension(int dim){return null;} }
+public abstract class MinecraftServer { public static MinecraftServer getServer(){return null;} public net.minecraft.world.WorldServer worldServerForDimension(int dim){return null;} public String getFolderName(){return null;} }

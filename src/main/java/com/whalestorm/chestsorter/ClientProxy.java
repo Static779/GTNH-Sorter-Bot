@@ -1,9 +1,11 @@
 package com.whalestorm.chestsorter;
 
 import net.minecraftforge.client.ClientCommandHandler;
+import net.minecraftforge.common.MinecraftForge;
 
 import com.whalestorm.chestsorter.client.KeyBindings;
 import com.whalestorm.chestsorter.client.LocalChests;
+import com.whalestorm.chestsorter.client.MarkRenderer;
 import com.whalestorm.chestsorter.client.SorterCommand;
 import com.whalestorm.chestsorter.client.SorterController;
 
@@ -32,6 +34,8 @@ public class ClientProxy extends CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(LocalChests.INSTANCE);
+        // RenderWorldLastEvent is posted on the Forge bus.
+        MinecraftForge.EVENT_BUS.register(MarkRenderer.INSTANCE);
         ClientCommandHandler.instance.registerCommand(new SorterCommand());
     }
 }

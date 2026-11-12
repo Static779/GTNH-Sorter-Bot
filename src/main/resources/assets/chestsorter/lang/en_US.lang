@@ -31,3 +31,7 @@ chestsorter.cfg.holoRead=Servers: read chests by looking (HoloInventory)
 chestsorter.cfg.keepFreePercent=Keep free for new items (%)
 chestsorter.cfg.extraChests=Compare with extra chests (plan only)
 chestsorter.cfg.bogoSortChests=Sort inside each chest (Inventory Bogosorter)
+chestsorter.cfg.migrateRadius=Moving storage: search radius
+chestsorter.cfg.showMarks=Outline marked input/output chests
+chestsorter.cfg.lpSetup=Write Logistics Pipes setup
+key.chestsorter.mark=Mark chest (input / output / none)

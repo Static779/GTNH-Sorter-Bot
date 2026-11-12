@@ -3,5 +3,6 @@ public class Minecraft { public net.minecraft.client.entity.EntityClientPlayerMP
  public net.minecraft.client.gui.GuiScreen currentScreen; public net.minecraft.client.multiplayer.PlayerControllerMP playerController;
  public net.minecraft.client.settings.GameSettings gameSettings; public java.io.File mcDataDir;
  public static Minecraft getMinecraft(){return null;} public void displayGuiScreen(net.minecraft.client.gui.GuiScreen s){}  public boolean isSingleplayer(){return false;} public net.minecraft.server.integrated.IntegratedServer getIntegratedServer(){return null;}
- public net.minecraft.util.MovingObjectPosition objectMouseOver;
+ public net.minecraft.util.MovingObjectPosition objectMouseOver; public net.minecraft.entity.EntityLivingBase renderViewEntity;
+ public net.minecraft.client.multiplayer.ServerData func_147104_D(){return null;}
 }
