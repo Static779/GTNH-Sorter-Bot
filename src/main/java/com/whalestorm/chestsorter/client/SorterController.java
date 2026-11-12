@@ -48,7 +48,8 @@ public final class SorterController {
     /** The container the crosshair is on (within 8 blocks), or null. */
     private static Container lookedAt() {
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null || mc.objectMouseOver == null
+        if (mc.thePlayer == null || mc.theWorld == null
+            || mc.objectMouseOver == null
             || mc.objectMouseOver.typeOfHit != net.minecraft.util.MovingObjectPosition.MovingObjectType.BLOCK) {
             return null;
         }
@@ -92,7 +93,13 @@ public final class SorterController {
         Marks.Kind next = now == null ? Marks.Kind.INPUT : now == Marks.Kind.INPUT ? Marks.Kind.OUTPUT : null;
         Marks.INSTANCE.set(w, dim, java.util.Collections.singletonList(c), next);
         MarkRenderer.INSTANCE.refresh();
-        Trace.chat(where(c) + ": " + (next == null ? "unmarked" : next.name().toLowerCase()) + ". " + markCounts());
+        Trace.chat(
+            where(c) + ": "
+                + (next == null ? "unmarked"
+                    : next.name()
+                        .toLowerCase())
+                + ". "
+                + markCounts());
     }
 
     /** /cs mark input|output|clear [radius]: the looked-at chest, or every chest within radius. */
@@ -116,7 +123,9 @@ public final class SorterController {
         }
         Marks.INSTANCE.set(Marks.worldKey(), mc.thePlayer.dimension, cs, kind);
         MarkRenderer.INSTANCE.refresh();
-        String what = kind == null ? "Unmarked " : "Marked as " + kind.name().toLowerCase() + ": ";
+        String what = kind == null ? "Unmarked "
+            : "Marked as " + kind.name()
+                .toLowerCase() + ": ";
         Trace.chat(what + (cs.size() == 1 ? where(cs.get(0)) : cs.size() + " chests") + ". " + markCounts());
     }
 

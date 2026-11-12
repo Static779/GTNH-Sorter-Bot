@@ -13,8 +13,19 @@ import com.whalestorm.chestsorter.core.WhatIf;
 /** Client-side /chestsorter command. Never sent to the server. */
 public final class SorterCommand extends CommandBase {
 
-    private static final List<String> SUBS = Arrays
-        .asList("run", "plan", "whatif", "mark", "migrate", "stop", "status", "scan", "item", "config", "verbose", "help");
+    private static final List<String> SUBS = Arrays.asList(
+        "run",
+        "plan",
+        "whatif",
+        "mark",
+        "migrate",
+        "stop",
+        "status",
+        "scan",
+        "item",
+        "config",
+        "verbose",
+        "help");
 
     @Override
     public String getCommandName() {
@@ -159,7 +170,8 @@ public final class SorterCommand extends CommandBase {
         Trace.chat("Commands (/cs works too):");
         Trace.chat(g + "/chestsorter run  - sort nearby chests (same as the key)");
         Trace.chat(g + "/chestsorter plan - survey and show the plan, move nothing");
-        Trace.chat(g + "/chestsorter mark input|output|clear [radius] - mark chests for moving storage (list, clearall)");
+        Trace.chat(
+            g + "/chestsorter mark input|output|clear [radius] - mark chests for moving storage (list, clearall)");
         Trace.chat(g + "/chestsorter migrate [plan] - move everything from input chests into output chests, sorted");
         Trace.chat(g + "/chestsorter whatif [n ...] - plan only, and show what n extra chests would change");
         Trace.chat(g + "/chestsorter stop - stop now; carried items stay in your inventory");

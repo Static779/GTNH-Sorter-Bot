@@ -268,7 +268,8 @@ public final class Run {
         int dim = p.dimension;
         Map<BlockPos, Marks.Kind> marked = Marks.INSTANCE.here(world, dim);
         if (marked.isEmpty()) {
-            trace.error("Not starting: no marked chests. Mark input and output chests first (/cs mark, or the mark key).");
+            trace.error(
+                "Not starting: no marked chests. Mark input and output chests first (/cs mark, or the mark key).");
             return false;
         }
         List<Container> found = new ArrayList<>();
@@ -292,7 +293,8 @@ public final class Run {
         for (BlockPos b : marked.keySet()) if (!seen.contains(b)) missing++;
         if (missing > 0) {
             trace.warn(
-                missing + " marked blocks have no chest within " + Config.migrateRadius
+                missing + " marked blocks have no chest within "
+                    + Config.migrateRadius
                     + " blocks (broken, too far, or not loaded); ignored.");
         }
         containers = found;
