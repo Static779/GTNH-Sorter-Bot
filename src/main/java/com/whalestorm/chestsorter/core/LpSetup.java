@@ -67,7 +67,8 @@ public final class LpSetup {
             if (!mods.isEmpty()) out.add("  ModBased ItemSink: " + String.join(", ", mods));
             if (!tabs.isEmpty()) out.add("  CreativeTab ItemSink: " + String.join(", ", tabs));
             if (defaultRoute) out.add("  Default Route (misc: anything no other sink takes)");
-            if (!unmatched.isEmpty()) out.add("  No sink for: " + String.join(", ", unmatched) + " (add a Polymorphic ItemSink)");
+            if (!unmatched.isEmpty())
+                out.add("  No sink for: " + String.join(", ", unmatched) + " (add a Polymorphic ItemSink)");
             return out;
         }
     }
@@ -133,7 +134,8 @@ public final class LpSetup {
         out.add("Logistics Pipes setup for the sorted chests (one pipe with a Chassis per chest).");
         out.add("Simplest: a Polymorphic ItemSink on every chest keeps each item going where it already is, plus a");
         out.add("Default Route on the misc chest for new kinds of items. For new items to find their group's chest,");
-        out.add("use the sinks below instead. Sinks rank: OreDict > Type Filter > ModBased/CreativeTab > Default Route.");
+        out.add(
+            "use the sinks below instead. Sinks rank: OreDict > Type Filter > ModBased/CreativeTab > Default Route.");
         out.add("A group spread over several chests gets the same sinks on each.");
         out.add("");
         for (ChestSetup s : setups) out.addAll(s.lines());
